@@ -1,4 +1,9 @@
 {
+  "log": {
+    "loglevel": "debug",
+    "access": "/var/log/v2ray/access.log",
+    "error": "/var/log/v2ray/error.log"
+  },
   "stats": {},
   "api": {
     "tag": "api",
@@ -39,7 +44,7 @@
             "id": "CFFDA8B6-196B-439B-880B-7DBE27FA47CC",
             "level": 0,
             "alterId": 0,
-            "email": "赵振",
+            "email": "zhaozhen",
             "createtime": "2020-11-02T12:03:58",
             "updatetime": "2020-11-02T12:03:58"
           },
@@ -110,7 +115,7 @@
     },
     {
       "listen": "127.0.0.1",
-      "port": 10085,
+      "port": 8080,
       "protocol": "dokodemo-door",
       "settings": {
         "address": "127.0.0.1"

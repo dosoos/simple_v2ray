@@ -16,4 +16,4 @@ docker run \
 -v `pwd`/caddy/config:/config \
 -p 80:80 \
 -p 443:443 \
-caddy
+caddy:cloudflare

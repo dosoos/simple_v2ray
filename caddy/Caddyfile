@@ -1,25 +1,22 @@
-pri.dosoos.com {
+*.dosoos.com {
+
     tls {
-        protocols tls1.2 tls1.3
-        ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
-        curves x25519
+	    dns cloudflare E8D1r4WK0uTKPk1xMi2B7uJU7bS0d_PdHZcxleJr
     }
+    
     @ws {
         path /api
-        header Connection *Upgrade*
-        header Upgrade websocket
+        header Connection *pgrade
+        header Upgrade *ebsocket
     }
     reverse_proxy @ws v2ray:58888
 
-    # Set this path to your site's directory.
-	root * /usr/share/caddy
+    root * /usr/share/caddy
 
-	# Enable the static file server.
-	file_server
+    log {
+        format console
+    }
 
-	# Another common task is to set up a reverse proxy:
-	# reverse_proxy localhost:8080
+    file_server
 
-	# Or serve a PHP site through php-fpm:
-	# php_fastcgi localhost:9000
 }

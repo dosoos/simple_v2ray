@@ -1,3 +1,7 @@
+# prepare library
+apt update
+apt install -y jq uuid-runtime
+
 docker run \
 -d \
 --restart=always \

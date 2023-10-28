@@ -1,9 +1,5 @@
-*.dosoos.com {
+vpc.basha.fun vpc.dosoos.com dmit.vpc.dosoos.com {
 
-    tls {
-	    dns cloudflare E8D1r4WK0uTKPk1xMi2B7uJU7bS0d_PdHZcxleJr
-    }
-    
     @ws {
         path /api
         header Connection *pgrade
@@ -20,3 +16,4 @@
     file_server
 
 }
+

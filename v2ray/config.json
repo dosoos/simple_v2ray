@@ -170,14 +170,6 @@
             "email": "test666",
             "createtime": "2023-10-08T17:29:57",
             "updatetime": "2023-10-08T17:29:57"
-          },
-          {
-            "id": "1471F5F7-8178-446E-9BDF-FE21476A6909",
-            "level": 0,
-            "alterId": 0,
-            "email": "test888",
-            "createtime": "2023-10-08T17:31:14",
-            "updatetime": "2023-10-08T17:31:14"
           }
         ]
       },

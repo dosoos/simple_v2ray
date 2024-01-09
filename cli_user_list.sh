@@ -11,9 +11,9 @@ do
 
     	echo $(eval "jq '.inbounds[0].settings.clients["$key"]' $CONFIG_FILE" | grep -E "id|level|alterId|updatetime" | sed 's/[", ]//g');
 
-	echo 'upload: '$(eval "docker exec v2ray v2ctl api --server=127.0.0.1:8080 StatsService.GetStats 'name: \"user>>>$EMAIL>>>traffic>>>uplink\"' || echo 'value: 0' " | grep value | sed 's/value: //g' | numfmt --to=iec );
+	echo 'upload: '$(eval "docker exec v2ray v2ray api stats -regexp $EMAIL'.+uplink' | grep -e 'Total' || echo 'Total: 0B' " | sed 's/Total: //g' );
 
-	echo 'download: '$(eval "docker exec v2ray v2ctl api --server=127.0.0.1:8080 StatsService.GetStats 'name: \"user>>>$EMAIL>>>traffic>>>downlink\"' || echo 'value: 0' " | grep value | sed 's/value: //g' | numfmt --to=iec );
+	echo 'download: '$(eval "docker exec v2ray v2ray api stats -regexp $EMAIL'.+downlink' | grep -e 'Total' || echo 'Total: 0B' " | sed 's/Total: //g' );
 
 	echo '';
 

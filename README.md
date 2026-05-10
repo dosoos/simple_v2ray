@@ -8,7 +8,7 @@
 
 ## 架构（简化）
 
-- **Caddy**：HTTPS、把 `/proxy` 反代到 V2Ray VMess 入站；把 **`/panel`、`/api/panel`、`/assets`** 用 Basic Auth 保护后反代到面板（避免 Sneat 静态资源绕开路由）。
+- **Caddy**：HTTPS、把 **`/api`（WebSocket）** 反代到 V2Ray VMess 入站；把 **`/panel`（含 `/panel/api/*` 管理接口）与 `/assets`** 用 Basic Auth 保护后反代到面板（避免 Sneat 静态资源绕开路由）。
 - **V2Ray**：使用仓库内 `v2ray/config.json`（可经面板覆盖）。
 - **Panel（FastAPI）**：只操作文件；Sneat 样式挂载为 `/assets/*`，逻辑见 `web/main.py`、`web/v2ray_config.py`。
 

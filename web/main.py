@@ -137,7 +137,7 @@ def panel_ui(request: Request) -> HTMLResponse:
     )
 
 
-@app.get("/api/panel/clients")
+@app.get("/panel/api/clients")
 def api_list_clients() -> JSONResponse:
     cfg = _load_config_dict()
     clients, traffic_error = enrich_clients_traffic(list_clients(cfg))
@@ -151,7 +151,7 @@ def api_list_clients() -> JSONResponse:
     )
 
 
-@app.get("/api/panel/clients/{index:int}/share")
+@app.get("/panel/api/clients/{index:int}/share")
 def api_client_share(index: int) -> JSONResponse:
     cfg = _load_config_dict()
     try:
@@ -162,7 +162,7 @@ def api_client_share(index: int) -> JSONResponse:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.post("/api/panel/clients")
+@app.post("/panel/api/clients")
 async def api_add_client(request: Request) -> JSONResponse:
     body = await request.json()
     if not isinstance(body, dict):
@@ -176,7 +176,7 @@ async def api_add_client(request: Request) -> JSONResponse:
     return JSONResponse(content={"ok": True})
 
 
-@app.patch("/api/panel/clients/{index:int}")
+@app.patch("/panel/api/clients/{index:int}")
 async def api_patch_client(index: int, request: Request) -> JSONResponse:
     body = await request.json()
     if not isinstance(body, dict):
@@ -190,7 +190,7 @@ async def api_patch_client(index: int, request: Request) -> JSONResponse:
     return JSONResponse(content={"ok": True})
 
 
-@app.delete("/api/panel/clients/{index:int}")
+@app.delete("/panel/api/clients/{index:int}")
 def api_del_client(index: int) -> JSONResponse:
     cfg = _load_config_dict()
     try:
@@ -201,7 +201,7 @@ def api_del_client(index: int) -> JSONResponse:
     return JSONResponse(content={"ok": True})
 
 
-@app.get("/api/panel/export")
+@app.get("/panel/api/export")
 def api_export_file() -> FileResponse:
     if not CONFIG_PATH.is_file():
         raise HTTPException(status_code=404, detail="配置文件不存在")
@@ -212,7 +212,7 @@ def api_export_file() -> FileResponse:
     )
 
 
-@app.get("/api/panel/config")
+@app.get("/panel/api/config")
 def api_get_config() -> JSONResponse:
     raw = _read_config_raw()
     try:
@@ -222,7 +222,7 @@ def api_get_config() -> JSONResponse:
     return JSONResponse(content={"path": str(CONFIG_PATH), "raw": raw, "json": body})
 
 
-@app.put("/api/panel/config")
+@app.put("/panel/api/config")
 async def api_put_config(request: Request) -> JSONResponse:
     text = (await request.body()).decode("utf-8")
     data = _parse_json(text)
@@ -232,7 +232,7 @@ async def api_put_config(request: Request) -> JSONResponse:
     return JSONResponse(content={"ok": True, "path": str(CONFIG_PATH)})
 
 
-@app.post("/api/panel/import")
+@app.post("/panel/api/import")
 async def api_import(
     file: UploadFile = File(...),
     sync: str = Form("0"),
@@ -308,7 +308,7 @@ def _restart_v2ray_via_docker() -> dict[str, Any]:
     return {"ok": True, "target": target}
 
 
-@app.post("/api/panel/restart-v2ray")
+@app.post("/panel/api/restart-v2ray")
 def api_restart_v2ray() -> JSONResponse:
     result = _restart_v2ray_via_docker()
     return JSONResponse(content=result)

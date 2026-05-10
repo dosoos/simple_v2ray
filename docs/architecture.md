@@ -1,9 +1,9 @@
 ## 架构（单节点简化版）
 
 ```
-客户端 ──HTTPS/WSS──► Caddy ──/proxy──► V2Ray (VMess)
+客户端 ──HTTPS/WSS──► Caddy ──/api (WS)──► V2Ray (VMess)
                          │
-                         └──/panel*, /api/panel*, /assets/* (Basic Auth)──► FastAPI
+                         └──/panel*（含 /panel/api），/assets/* (Basic Auth)──► FastAPI
 ```
 
 - **无数据库**：面板只读写挂载卷中的 `v2ray/config.json`。**导出**即完整文件下载；**导入**上传完整 JSON，运行时仅解析 VMess 用户 `clients` 写回（路由/API 等其它键不因导入文件而替换）。

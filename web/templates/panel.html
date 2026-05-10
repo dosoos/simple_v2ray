@@ -241,7 +241,7 @@
                 <div class="card-header d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2">
                   <h5 class="mb-0">配置备份（完整 JSON）导入 / 导出</h5>
                   <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center">
-                    <a href="/api/panel/export" download="config.json" class="btn btn-primary btn-sm">
+                    <a href="/panel/api/export" download="config.json" class="btn btn-primary btn-sm">
                       <i class="bx bx-download me-1"></i>导出完整 config.json
                     </a>
                     <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center flex-grow-1">
@@ -448,7 +448,7 @@
       if (!confirm('确定重启 V2Ray 容器？代理连接会短暂中断。')) return;
       btnRestartV2ray.disabled = true;
       try {
-        var r = await fetch('/api/panel/restart-v2ray', { ...fetchOpts, method: 'POST' });
+        var r = await fetch('/panel/api/restart-v2ray', { ...fetchOpts, method: 'POST' });
         var j = await r.json().catch(function () { return {}; });
         if (!r.ok) throw new Error(apiErrDetail(j) || r.statusText);
         flash('已发送重启：' + (j.target || 'v2ray'), true);
@@ -591,7 +591,7 @@
       modalDetail.show();
       try {
         var idx = tr.dataset.index;
-        var rs = await fetch('/api/panel/clients/' + encodeURIComponent(idx) + '/share', fetchOpts);
+        var rs = await fetch('/panel/api/clients/' + encodeURIComponent(idx) + '/share', fetchOpts);
         var sj = await rs.json().catch(function () {
           return {};
         });
@@ -612,7 +612,7 @@
     tr.querySelector('.btn-del').onclick = async function () {
       if (!confirm('删除用户「' + tr.dataset.email + '」？')) return;
       try {
-        const r = await fetch('/api/panel/clients/' + tr.dataset.index, { ...fetchOpts, method: 'DELETE' });
+        const r = await fetch('/panel/api/clients/' + tr.dataset.index, { ...fetchOpts, method: 'DELETE' });
         const j = await r.json().catch(function () { return {}; });
         if (!r.ok) throw new Error(j.detail || r.statusText);
         flash('已删除。请按需重启 v2ray。', true);
@@ -648,7 +648,7 @@
 
   async function refreshTable() {
     if (!tbody) return;
-    const r = await fetch('/api/panel/clients', fetchOpts);
+    const r = await fetch('/panel/api/clients', fetchOpts);
     const j = await r.json();
     if (!r.ok) throw new Error(j.detail || r.statusText);
     tbody.innerHTML = '';
@@ -721,14 +721,14 @@
     try {
       var r;
       if (idx === '') {
-        r = await fetch('/api/panel/clients', {
+        r = await fetch('/panel/api/clients', {
           ...fetchOpts,
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
       } else {
-        r = await fetch('/api/panel/clients/' + idx, {
+        r = await fetch('/panel/api/clients/' + idx, {
           ...fetchOpts,
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -755,7 +755,7 @@
     fd.append('file', f);
     fd.append('sync', document.getElementById('chkSyncImport').checked ? '1' : '0');
     try {
-      var r = await fetch('/api/panel/import', { ...fetchOpts, method: 'POST', body: fd });
+      var r = await fetch('/panel/api/import', { ...fetchOpts, method: 'POST', body: fd });
       var j = await r.json();
       if (!r.ok) throw new Error(j.detail || r.statusText);
       flash(

@@ -5,5 +5,5 @@ BASE="${1:-http://127.0.0.1}"
 USER="${2:-admin}"
 PASS="${3:-changeme}"
 
-curl -sS -u "${USER}:${PASS}" "${BASE}/api/panel/config" | head -c 4000
+curl -sS -u "${USER}:${PASS}" "${BASE}/panel/api/config" | head -c 4000
 echo

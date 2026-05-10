@@ -1,16 +1,16 @@
 (vpc_handlers) {
 
     @v2ws {
-        # 兼容 Upgrade/upgrade 等大小写差异
-        path /proxy
+        # 兼容 Upgrade/upgrade 等大小写差异；VMess WS 路径与 config.json 中 wsSettings.path 一致
+        path /api
         header Connection *pgrade*
         header Upgrade *ebsocket*
     }
     reverse_proxy @v2ws v2ray:58888
 
-    # 面板、API 与 Sneat 静态资源（/assets/*）。勿仅用 path /panel*：部分 Caddy 版本不匹配 /panel/，会得到空响应（Content-Length: 0）
+    # 管理入口统一走 /panel（含 /panel/api/*），静态资源 /assets/*。勿仅用 path /panel*：部分 Caddy 版本不匹配 /panel/，会得到空响应（Content-Length: 0）
     @panel {
-        path_regexp panel_route ^/(panel|api/panel)(/.*)?$$|^/assets/
+        path_regexp panel_route ^/panel(/.*)?$$|^/assets/
     }
     handle @panel {
         basicauth {

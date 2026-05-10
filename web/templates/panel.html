@@ -239,23 +239,24 @@
 
               <div class="card">
                 <div class="card-header d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2">
-                  <h5 class="mb-0">配置导入 / 导出</h5>
+                  <h5 class="mb-0">配置备份（完整 JSON）导入 / 导出</h5>
                   <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center">
                     <a href="/api/panel/export" download="config.json" class="btn btn-primary btn-sm">
-                      <i class="bx bx-download me-1"></i>导出 config.json
+                      <i class="bx bx-download me-1"></i>导出完整 config.json
                     </a>
                     <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center flex-grow-1">
                       <input type="file" id="fileImp" class="form-control form-control-sm" accept="application/json,.json" />
                       <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="chkOverwrite" />
-                        <label class="form-check-label small" for="chkOverwrite">覆盖完整文件（危险）</label>
+                        <input class="form-check-input" type="checkbox" id="chkSyncImport" />
+                        <label class="form-check-label small" for="chkSyncImport">同步列表（未出现在导入文件中的本地用户将被删除）</label>
                       </div>
-                      <button type="button" class="btn btn-outline-secondary btn-sm" id="btnImp"><i class="bx bx-upload me-1"></i>上传导入</button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" id="btnImp"><i class="bx bx-upload me-1"></i>导入备份 JSON</button>
                     </div>
                   </div>
                 </div>
                 <div class="card-body py-2">
-                  <small class="text-muted">不勾选「覆盖」时，仅合并 JSON 中 VMess 入站用户列表（按备注去重）。配置文件：<code>{{ config_path }}</code></small>
+                  <small class="text-muted"
+                    ><strong>导出</strong>为当前磁盘上的<strong>完整</strong> <code>config.json</code>。<strong>导入</strong>也请上传<strong>完整备份 JSON</strong>（可与导出文件一致）；服务端<strong>只解析其中 VMess 入站的 <code>clients</code></strong> 用于合并/同步，导入文件里的路由、出站、API、stats 等均<strong>忽略</strong>，不会覆盖本地其它配置。默认合并用户；勾选「同步列表」则以导入中的用户列表替换 VMess 用户数组。路径：<code>{{ config_path }}</code></small>
                 </div>
               </div>
             </div>
@@ -752,12 +753,15 @@
     }
     var fd = new FormData();
     fd.append('file', f);
-    fd.append('overwrite', document.getElementById('chkOverwrite').checked ? '1' : '0');
+    fd.append('sync', document.getElementById('chkSyncImport').checked ? '1' : '0');
     try {
       var r = await fetch('/api/panel/import', { ...fetchOpts, method: 'POST', body: fd });
       var j = await r.json();
       if (!r.ok) throw new Error(j.detail || r.statusText);
-      flash(j.mode === 'full_replace' ? '已完整覆盖配置' : '已合并用户列表', true);
+      flash(
+        j.mode === 'sync_clients' ? '已按导入文件同步用户列表（其余配置未改）' : '已合并导入用户（同名覆盖 UUID；其余配置未改）',
+        true
+      );
       await refreshTable();
     } catch (e) {
       flash(String(e), false);

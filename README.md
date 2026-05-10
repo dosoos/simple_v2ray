@@ -1,6 +1,6 @@
 # 个人简易 VPN 代理（单节点）
 
-轻量单节点方案：**Caddy** 负责 TLS、WebSocket 反代与 **管理页 Basic 认证**；**FastAPI** 直接读写 `v2ray/config.json`（**无数据库**）。管理后台使用仓库内 **Sneat** 静态资源（`web/sneat-1.0.0/assets`，挂载 **`/assets/`**），**表格管理** VMess 用户（`alterId` / `level` 固定为 0，无需用户填写）；支持 **导出 / 导入** `config.json`（可选「覆盖完整文件」或仅 **合并用户列表**）。
+轻量单节点方案：**Caddy** 负责 TLS、WebSocket 反代与 **管理页 Basic 认证**；**FastAPI** 直接读写 `v2ray/config.json`（**无数据库**）。管理后台使用仓库内 **Sneat** 静态资源（`web/sneat-1.0.0/assets`，挂载 **`/assets/`**），**表格管理** VMess 用户（`alterId` / `level` 固定为 0，无需用户填写）；支持 **导出 / 导入**：**导出**为**完整** `config.json`；**导入**也请使用**完整备份 JSON**（可与导出文件相同），面板**仅提取其中 VMess 入站 `clients`** 做合并/同步，**其它字段全部忽略**；默认 **合并用户**，可选 **同步列表**（以导入为准替换 VMess 用户数组）。
 
 ## 文档
 

@@ -101,19 +101,58 @@ def delete_client(config: dict[str, Any], index: int) -> None:
     clients.pop(index)
 
 
-def merge_vmess_clients(
-    base: dict[str, Any], incoming: dict[str, Any]
-) -> dict[str, Any]:
-    """将 incoming 中 vmess 的 clients 按 email 合并进 base（同 email 覆盖，新 email 追加）。"""
-    out = copy.deepcopy(base)
-    try:
-        _, ib_in = find_vmess_inbound(incoming)
-    except ValueError:
-        return out
-    incoming_clients = ib_in.get("settings", {}).get("clients")
-    if not isinstance(incoming_clients, list) or not incoming_clients:
-        return out
+def validate_import_rows_non_empty(rows: list[dict[str, Any]]) -> None:
+    """至少有一条可规范化为用户记录，否则抛出 ValueError。"""
+    for c in rows:
+        if not isinstance(c, dict):
+            continue
+        try:
+            _normalize_client(
+                {
+                    "email": c.get("email"),
+                    "id": c.get("id"),
+                }
+            )
+            return
+        except ValueError:
+            continue
+    raise ValueError("导入文件中没有任何有效用户（每条须含非空备注 email）")
 
+
+def extract_import_clients(incoming: dict[str, Any]) -> list[dict[str, Any]]:
+    """从导入的完整 config（或与导出同结构的 JSON）中仅取出 VMess 用户条目。
+
+    路由、出站、API、stats 等字段一律不使用；合并逻辑由 merge/sync 在磁盘当前配置上完成。
+    """
+    if not isinstance(incoming, dict):
+        raise ValueError("导入须为 JSON 对象")
+
+    try:
+        _, ib = find_vmess_inbound(incoming)
+        raw = ib.get("settings", {}).get("clients")
+        if isinstance(raw, list):
+            extracted = [c for c in raw if isinstance(c, dict)]
+            if extracted:
+                return extracted
+    except ValueError:
+        pass
+
+    raw = incoming.get("clients")
+    if isinstance(raw, list):
+        extracted = [c for c in raw if isinstance(c, dict)]
+        if extracted:
+            return extracted
+
+    raise ValueError(
+        "未找到 VMess 用户列表：请上传完整 config.json（与「导出」格式一致，内含 vmess 入站的 settings.clients）；亦兼容仅含顶层 clients 数组的片段"
+    )
+
+
+def merge_import_clients(
+    base: dict[str, Any], incoming_clients: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """合并用户：同备注(email)覆盖 UUID，新备注追加，仅存在于本地的用户保留。"""
+    out = copy.deepcopy(base)
     _, ib_out = find_vmess_inbound(out)
     settings = ib_out.setdefault("settings", {})
     cur = settings.setdefault("clients", [])
@@ -145,4 +184,33 @@ def merge_vmess_clients(
             cur.append(norm)
             by_email[em] = cur[-1]
 
+    return out
+
+
+def sync_import_clients(
+    base: dict[str, Any], incoming_clients: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """以导入文件为准覆盖 VMess 用户数组：同名按导入覆盖；未出现在导入中的本地用户删除。"""
+    out = copy.deepcopy(base)
+    _, ib_out = find_vmess_inbound(out)
+    settings = ib_out.setdefault("settings", {})
+    by_email: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for c in incoming_clients:
+        if not isinstance(c, dict):
+            continue
+        try:
+            norm = _normalize_client(
+                {
+                    "email": c.get("email"),
+                    "id": c.get("id"),
+                }
+            )
+        except ValueError:
+            continue
+        em = norm["email"]
+        if em not in by_email:
+            order.append(em)
+        by_email[em] = norm
+    settings["clients"] = [by_email[e] for e in order]
     return out

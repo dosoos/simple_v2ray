@@ -23,11 +23,14 @@ from v2ray_stats import enrich_clients_traffic
 from v2ray_config import (
     add_client,
     delete_client,
+    extract_import_clients,
     find_vmess_inbound,
     list_clients,
     load_config,
-    merge_vmess_clients,
+    merge_import_clients,
+    sync_import_clients,
     update_client,
+    validate_import_rows_non_empty,
 )
 
 CONFIG_PATH = Path(os.environ.get("V2RAY_CONFIG_PATH", "/v2ray/config.json")).resolve()
@@ -232,7 +235,7 @@ async def api_put_config(request: Request) -> JSONResponse:
 @app.post("/api/panel/import")
 async def api_import(
     file: UploadFile = File(...),
-    overwrite: str = Form("0"),
+    sync: str = Form("0"),
 ) -> JSONResponse:
     body = await file.read()
     text = body.decode("utf-8")
@@ -240,17 +243,24 @@ async def api_import(
     if not isinstance(incoming, dict):
         raise HTTPException(status_code=400, detail="须上传 JSON 对象")
 
-    if overwrite.lower() in ("1", "true", "yes", "on"):
-        _save_config_dict(incoming)
-        return JSONResponse(content={"ok": True, "mode": "full_replace"})
+    try:
+        rows = extract_import_clients(incoming)
+        validate_import_rows_non_empty(rows)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     base = _load_config_dict()
     try:
-        merged = merge_vmess_clients(base, incoming)
+        if sync.lower() in ("1", "true", "yes", "on"):
+            merged = sync_import_clients(base, rows)
+            mode = "sync_clients"
+        else:
+            merged = merge_import_clients(base, rows)
+            mode = "merge_clients"
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     _save_config_dict(merged)
-    return JSONResponse(content={"ok": True, "mode": "merge_clients"})
+    return JSONResponse(content={"ok": True, "mode": mode})
 
 
 def _restart_v2ray_via_docker() -> dict[str, Any]:

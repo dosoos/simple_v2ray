@@ -17,13 +17,25 @@ def _env_bool(key: str, default: bool) -> bool:
     return v.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _primary_connect_host(raw: str) -> str:
+    """多域名（逗号/分号/中文逗号分隔）时取第一个，作为客户端连接地址与分享链接。"""
+    s = raw.strip()
+    if not s:
+        return "localhost"
+    for sep in ("，", ";", ","):
+        s = s.replace(sep, ",")
+    first = s.split(",")[0].strip()
+    return first if first else "localhost"
+
+
 def public_endpoint() -> tuple[str, int, bool]:
-    """用户客户端应连接的对端地址（通常为 Caddy 域名与 443 TLS）。"""
-    host = (
+    """用户客户端应连接的对端地址（通常为 Caddy 首个域名与 443 TLS）。"""
+    raw = (
         os.environ.get("PUBLIC_PROXY_HOST", "").strip()
         or os.environ.get("HOST_DOMAIN", "").strip()
-        or "localhost"
+        or ""
     )
+    host = _primary_connect_host(raw) if raw else "localhost"
     port_s = os.environ.get("PUBLIC_PROXY_PORT", "").strip()
     tls_default = host not in ("localhost", "127.0.0.1")
     tls = _env_bool("PUBLIC_PROXY_TLS", tls_default)

@@ -36,6 +36,12 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    entrypoint: ["/bin/sh", "-c"]
+    # Caddy 要求多站点地址中逗号后须有空格；将 a.com,b.com 规范为 a.com, b.com
+    command:
+      - |
+        export HOST_DOMAIN_SITES="$$(echo "$$HOST_DOMAIN" | tr '，' ',' | sed 's/, */, /g')"
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     environment:
       HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
       CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}

@@ -37,7 +37,7 @@ docker compose restart v2ray
 
 | 变量 | 含义 |
 | --- | --- |
-| `HOST_DOMAIN` | Caddy 站点名与 TLS 域名；本地可用 `localhost` |
+| `HOST_DOMAIN` | Caddy 站点与 TLS；**可多域名**（逗号分隔即可，如 `a.com,b.com`）；Compose 启动时会规范为 Caddy 要求的「逗号后空格」；面板 VMess 分享取**第一个**域名；本地可用 `localhost` |
 | `CADDY_ADMIN_USER` | Basic 认证用户名（默认 `admin`） |
 | `CADDY_ADMIN_HASH` | 密码的 bcrypt 哈希；不填则使用 compose 内建默认（密码 `changeme`） |
 

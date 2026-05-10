@@ -14,17 +14,16 @@
 
 ## 快速开始
 
-1. 复制环境变量：`cp .env.example .env`。若仍使用旧的 `ADMIN_USERNAME` / `ADMIN_PASSWORD`，请改为 **`CADDY_ADMIN_USER` + `CADDY_ADMIN_HASH`**（见 `.env.example`）。bcrypt 哈希里的 `$` 在 `.env` 中建议用**单引号**包住整段哈希，避免被 Compose 解析成变量。
+1. 复制环境变量：`cp .env.example .env`。面板口令使用 **`caddy/admin.hash`**（单行 bcrypt），**不要**再把哈希放进 `.env`（Compose 会破坏 `$`）。仓库自带默认 **`admin.hash`** 对应用户名 **`admin`**、密码 **`changeme`**（仅试跑）。
 2. 启动：`docker compose up -d --build`。（`v2ray/config.json` 不入库；首次启动 **panel** 会从模板生成；**v2ray** 在 compose 中依赖 **panel** 晚启动，以减少竞争。）
-3. 浏览器打开管理页：`https://<HOST_DOMAIN>/panel/`（本机 HTTP：`http://127.0.0.1/panel/`）。  
-   - 若未自定义 `CADDY_ADMIN_HASH`，默认用户名为 `admin`、密码为 **`changeme`**（仅试跑，上线前务必修改）。
+3. 浏览器打开管理页：`https://<HOST_DOMAIN>/panel/`（本机 HTTP：`http://127.0.0.1/panel/`）。
 
 ### 设置管理密码（bcrypt）
 
 ```bash
 chmod +x scripts/gen-caddy-hash.sh
 ./scripts/gen-caddy-hash.sh '你的强密码'
-# 将输出写入 .env 的 CADDY_ADMIN_HASH=，并 docker compose up -d
+docker compose restart caddy
 ```
 
 修改 `config.json` 后，一般需要 **重启 V2Ray** 才能生效：
@@ -38,8 +37,8 @@ docker compose restart v2ray
 | 变量 | 含义 |
 | --- | --- |
 | `HOST_DOMAIN` | Caddy 站点与 TLS；**可多域名**（逗号分隔即可，如 `a.com,b.com`）；Compose 启动时会规范为 Caddy 要求的「逗号后空格」；面板 VMess 分享取**第一个**域名；本地可用 `localhost` |
-| `CADDY_ADMIN_USER` | Basic 认证用户名（默认 `admin`） |
-| `CADDY_ADMIN_HASH` | 密码的 bcrypt 哈希；不填则使用 compose 内建默认（密码 `changeme`） |
+| `CADDY_ADMIN_USER` | Basic 认证用户名（默认 `admin`），须与 **`caddy/admin.hash`** 所用口令对应 |
+| （口令） | 写入 **`caddy/admin.hash`** 单行 bcrypt；勿用 `.env` 传哈希。详见 **`scripts/gen-caddy-hash.sh`** |
 
 Stats API（`V2RAY_API_HOST`/`V2RAY_API_PORT`，默认 **`v2ray`/`10085`**）与按月流量（`TRAFFIC_STORE_PATH`、`TRAFFIC_POLL_*`、`TRAFFIC_MONTH_TZ` 等）由应用代码内置默认值；需要覆盖时在本地 **`export`**，或在 **`docker-compose.yml`** 的 **`panel.environment`** 里自行追加条目。未设置 **`V2RAY_DOCKER_CONTAINER`** 时，面板「重启 V2Ray」会按 Compose 标签自动查找 **`v2ray`** 服务。
 

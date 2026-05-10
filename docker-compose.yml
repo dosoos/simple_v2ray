@@ -36,18 +36,13 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    entrypoint: ["/bin/sh", "-c"]
-    # Caddy 要求多站点地址中逗号后须有空格；将 a.com,b.com 规范为 a.com, b.com
-    command:
-      - |
-        export HOST_DOMAIN_SITES="$$(echo "$$HOST_DOMAIN" | tr '，' ',' | sed 's/, */, /g')"
-        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    entrypoint: ["/bin/sh", "/etc/caddy/docker-entrypoint.sh"]
     environment:
       HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
       CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}
-      # 未设置时默认使用密码 changeme 的 bcrypt（仅方便本地试跑，生产务必覆盖）
-      CADDY_ADMIN_HASH: ${CADDY_ADMIN_HASH:-$$2a$$14$$XHY.OgJFoWOvzYTiUycXw.wARMwegkwAOh2JE4.EJ9hbtCZ7nJXVu}
     volumes:
+      - ./caddy/docker-entrypoint.sh:/etc/caddy/docker-entrypoint.sh:ro
+      - ./caddy/admin.hash:/etc/caddy/admin.hash:ro
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config

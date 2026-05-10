@@ -13,9 +13,8 @@
         path_regexp panel_route ^/panel(/.*)?$$|^/assets/
     }
     handle @panel {
-        basicauth {
-            {$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
-        }
+        # basicauth 由 docker-entrypoint.sh 写入 /tmp/panel-basicauth.caddy（哈希含 $，勿用 {$ENV} 写在 Caddyfile 里）
+        import /tmp/panel-basicauth.caddy
         reverse_proxy panel:8000
     }
 

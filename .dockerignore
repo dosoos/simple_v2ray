@@ -2,7 +2,8 @@
 **/*.pyc
 **/.pytest_cache
 .git
-web/staticfiles
-web/db.sqlite3
-v2ray/log
 *.log
+.env
+.venv
+v2ray/log
+v2ray/backups

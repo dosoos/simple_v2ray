@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
-# 示例：测试主节点 sync/users（使用节点 Bearer，且该节点须已在后台启用）
+# 调用示例（需携带与管理后台一致的 Basic 账号密码）
 set -euo pipefail
-BASE="${1:-https://localhost}"
-BEARER="${2:-}"
+BASE="${1:-http://127.0.0.1}"
+USER="${2:-admin}"
+PASS="${3:-changeme}"
 
-if [[ -z "$BEARER" ]]; then
-  echo "用法: $0 <站点根URL> <bearer_token>"
-  exit 1
-fi
-
-curl -sS -G "${BASE}/api/v1/sync/users/" \
-  --data-urlencode "since=0" \
-  -H "Authorization: Bearer ${BEARER}" \
-  -H "Accept: application/json" | head -c 2000
+curl -sS -u "${USER}:${PASS}" "${BASE}/api/panel/config" | head -c 4000
 echo

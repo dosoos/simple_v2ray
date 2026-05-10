@@ -1,8 +1,2 @@
-Django~=6.0.5
-gunicorn>=22.0
-whitenoise>=6.7
-qrcode[pil]>=7.4
-grpcio>=1.60
-grpcio-tools>=1.60
-protobuf>=4.25
-python-decouple>=3.8
+# 本地开发（与 web/requirements.txt 保持一致）
+-r web/requirements.txt

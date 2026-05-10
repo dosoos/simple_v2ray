@@ -1,22 +1,18 @@
 ## 扩展字段（仅用于 YAML anchor 复用），不能放在 services 下
 x-app-env: &app_env
   HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
-  MASTER_URL: ${MASTER_URL:-}
-  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
-  DEBUG: ${DEBUG:-0}
+  V2RAY_CONFIG_PATH: /v2ray/config.json
+  BACKUP_DIR: /v2ray/backups
 
 services:
 
-  web:
+  panel:
     build:
       context: ./web
       dockerfile: Dockerfile
     environment: *app_env
     volumes:
-      - django_data:/data
       - ./v2ray:/v2ray
-    depends_on:
-      - v2ray
     networks:
       - internal
 
@@ -37,28 +33,15 @@ services:
       - "443:443"
     environment:
       HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
+      CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}
+      # 未设置时默认使用密码 changeme 的 bcrypt（仅方便本地试跑，生产务必覆盖）
+      CADDY_ADMIN_HASH: ${CADDY_ADMIN_HASH:-$$2a$$14$$XHY.OgJFoWOvzYTiUycXw.wARMwegkwAOh2JE4.EJ9hbtCZ7nJXVu}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-      - django_data:/srv/django:ro
     depends_on:
-      - web
-      - v2ray
-    networks:
-      - internal
-
-  scheduler:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-    command: ["/app/scheduler.sh"]
-    environment: *app_env
-    volumes:
-      - django_data:/data
-      - ./v2ray:/v2ray
-    depends_on:
-      - web
+      - panel
       - v2ray
     networks:
       - internal
@@ -68,6 +51,5 @@ networks:
     driver: bridge
 
 volumes:
-  django_data:
   caddy_data:
   caddy_config:

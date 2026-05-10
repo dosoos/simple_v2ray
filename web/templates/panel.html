@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>V2Ray 配置</title>
+  <style>
+    :root { color-scheme: dark light; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.25rem; max-width: 960px; }
+    h1 { font-size: 1.25rem; }
+    textarea { width: 100%; min-height: 420px; font-family: ui-monospace, monospace; font-size: 13px; padding: 0.75rem; box-sizing: border-box; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; align-items: center; }
+    button, .btn { padding: 0.4rem 0.75rem; cursor: pointer; }
+    .muted { color: #666; font-size: 0.85rem; }
+    .err { color: #b00020; white-space: pre-wrap; }
+    .ok { color: #0a7; }
+    ul.backups { list-style: none; padding: 0; margin: 0; }
+    ul.backups li { margin: 0.35rem 0; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    code { font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>V2Ray <code>config.json</code></h1>
+  <p class="muted">路径：<code>{{ config_path }}</code> · 备份目录：<code>{{ backup_dir }}</code></p>
+  <textarea id="cfg" spellcheck="false">{{ config_text }}</textarea>
+  <div class="row">
+    <button type="button" id="btnSave">保存配置</button>
+    <button type="button" id="btnBackup">生成备份文件</button>
+    <a class="btn" id="lnkDl" href="/api/panel/config" download="config.json">下载当前配置</a>
+  </div>
+  <div class="row">
+    <label>从文件导入（覆盖当前）：<input type="file" id="fileImp" accept="application/json,.json"/></label>
+    <button type="button" id="btnImp">上传并写入</button>
+  </div>
+  <p class="muted">修改写入后，通常需要重启 V2Ray 容器才能生效：<code>docker compose restart v2ray</code></p>
+  <div id="msg"></div>
+
+  <h2 style="font-size:1rem;margin-top:1.5rem;">备份列表</h2>
+  {% if backups %}
+  <ul class="backups">
+    {% for b in backups %}
+    <li>
+      <code>{{ b }}</code>
+      <a href="/api/panel/backups/{{ b }}">下载</a>
+      <button type="button" class="btnRestore" data-file="{{ b }}">还原覆盖</button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">暂无备份，点击「生成备份文件」创建。</p>
+  {% endif %}
+
+  <script>
+    const msg = document.getElementById('msg');
+    function show(text, ok) {
+      msg.innerHTML = '<p class="' + (ok ? 'ok' : 'err') + '">' + text + '</p>';
+    }
+    document.getElementById('btnSave').onclick = async () => {
+      try {
+        const r = await fetch('/api/panel/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: document.getElementById('cfg').value
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.detail || r.statusText);
+        show('已保存。请按需重启 v2ray。', true);
+      } catch (e) { show(String(e), false); }
+    };
+    document.getElementById('btnBackup').onclick = async () => {
+      try {
+        const r = await fetch('/api/panel/backups', { method: 'POST' });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.detail || r.statusText);
+        show('已写入备份：' + j.file + '。刷新页面可看到列表。', true);
+        setTimeout(() => location.reload(), 800);
+      } catch (e) { show(String(e), false); }
+    };
+    document.getElementById('btnImp').onclick = async () => {
+      const f = document.getElementById('fileImp').files[0];
+      if (!f) { show('请先选择 JSON 文件', false); return; }
+      const fd = new FormData(); fd.append('file', f);
+      try {
+        const r = await fetch('/api/panel/import', { method: 'POST', body: fd });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.detail || r.statusText);
+        show('已导入并保存。', true);
+        const data = await fetch('/api/panel/config').then(r => r.json());
+        document.getElementById('cfg').value = data.json != null
+          ? JSON.stringify(data.json, null, 2)
+          : (data.raw || '');
+      } catch (e) { show(String(e), false); }
+    };
+    document.querySelectorAll('.btnRestore').forEach(btn => {
+      btn.onclick = async () => {
+        const file = btn.getAttribute('data-file');
+        if (!confirm('确定用「' + file + '」覆盖当前 config.json？')) return;
+        try {
+          const r = await fetch('/api/panel/restore/' + encodeURIComponent(file), { method: 'POST' });
+          const j = await r.json();
+          if (!r.ok) throw new Error(j.detail || r.statusText);
+          const data = await fetch('/api/panel/config').then(r => r.json());
+          document.getElementById('cfg').value = data.json != null
+            ? JSON.stringify(data.json, null, 2)
+            : (data.raw || '');
+          show('已从备份还原。', true);
+        } catch (e) { show(String(e), false); }
+      };
+    });
+  </script>
+</body>
+</html>

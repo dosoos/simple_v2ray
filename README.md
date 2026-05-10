@@ -40,15 +40,23 @@ docker compose restart v2ray
 | `HOST_DOMAIN` | Caddy 站点名与 TLS 域名；本地可用 `localhost` |
 | `CADDY_ADMIN_USER` | Basic 认证用户名（默认 `admin`） |
 | `CADDY_ADMIN_HASH` | 密码的 bcrypt 哈希；不填则使用 compose 内建默认（密码 `changeme`） |
-| `V2RAY_DOCKER_CONTAINER` | （可选）面板「重启 V2Ray」时指定容器名或 ID；不设则按 Compose 标签自动查找 `v2ray` 服务 |
+
+Stats API（`V2RAY_API_HOST`/`V2RAY_API_PORT`，默认 **`v2ray`/`10085`**）与按月流量（`TRAFFIC_STORE_PATH`、`TRAFFIC_POLL_*`、`TRAFFIC_MONTH_TZ` 等）由应用代码内置默认值；需要覆盖时在本地 **`export`**，或在 **`docker-compose.yml`** 的 **`panel.environment`** 里自行追加条目。未设置 **`V2RAY_DOCKER_CONTAINER`** 时，面板「重启 V2Ray」会按 Compose 标签自动查找 **`v2ray`** 服务。
 
 面板进程读取：`V2RAY_CONFIG_PATH`（默认 `/v2ray/config.json`）。Compose 已为 **panel** 挂载 **`/var/run/docker.sock`**，便于在后台一键 **`docker restart`** 重启 **v2ray**（等同在宿主机执行；请确保面板账号密码强度足够，避免泄露 Docker 控制权）。
+
+### 流量统计说明（按月）
+
+- 面板内 **单独线程** 按 **`TRAFFIC_POLL_INTERVAL_SEC`**（默认 **3600 秒**）调用 **StatsService.QueryStats**，且 **`reset=True`**：读出当前计数器后立即清空 V2Ray 侧计数，读到的字节作为 **增量** 累加到 **`TRAFFIC_STORE_PATH`**（默认 **`/v2ray/panel_traffic_monthly.json`**），按 **`TRAFFIC_MONTH_TZ`**（可选，如 **`Asia/Shanghai`**）划分 **自然月**。
+- 列表里展示的是 **本月累计上下行**（读 JSON，**不**在每次打开页面时直连 Stats）。
+- **panel / v2ray / 宿主机重启**：只要 **`./v2ray` 挂载目录不删**，历史月份与本月累计 **不会丢**；V2Ray 重启只会丢掉「尚未被下一轮采集读走」的进程内计数，下一采集周期会继续累加增量。
 
 ## 本地开发（可选）
 
 ```bash
 cd web && pip install -r requirements.txt
 export V2RAY_CONFIG_PATH="$(pwd)/../v2ray/config.json"
+export TRAFFIC_STORE_PATH="$(pwd)/../v2ray/panel_traffic_monthly.json"
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 

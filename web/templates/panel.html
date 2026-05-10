@@ -153,6 +153,9 @@
               {% if load_error %}
               <div class="alert alert-danger" role="alert">{{ load_error }}</div>
               {% endif %}
+              {% if traffic_error %}
+              <div class="alert alert-warning py-2 small mb-3" role="alert">流量统计不可用：{{ traffic_error }}</div>
+              {% endif %}
 
               <div class="card mb-3 panel-table-card">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between gap-2">
@@ -164,21 +167,33 @@
                     <thead>
                       <tr>
                         <th class="panel-col-email">用户（备注）</th>
-                        <th class="panel-col-traffic text-center">流量</th>
+                        <th class="panel-col-traffic text-center">
+                          流量<br /><span class="fw-normal text-muted" style="font-size: 0.68rem">{{ traffic_month }} 本月累计</span>
+                        </th>
                         <th class="text-end panel-col-actions">操作</th>
                       </tr>
                     </thead>
                     <tbody id="tbody" class="table-border-bottom-0">
                       {% for c in clients %}
-                      <tr data-index="{{ c.index }}" data-id="{{ c.id|e }}" data-email="{{ c.email|e }}">
+                      <tr
+                        data-index="{{ c.index }}"
+                        data-id="{{ c.id|e }}"
+                        data-email="{{ c.email|e }}"
+                        data-bytes-up="{{ c.bytes_up }}"
+                        data-bytes-down="{{ c.bytes_down }}"
+                        data-traffic-up="{{ c.traffic_up|e }}"
+                        data-traffic-down="{{ c.traffic_down|e }}"
+                      >
                         <td class="panel-col-email">
                           <div class="panel-email-inner">
                             <strong class="email-truncate" title="{{ c.email }}">{{ c.email }}</strong>
                           </div>
                         </td>
                         <td class="panel-col-traffic align-middle text-center">
-                          <span class="fw-medium text-muted">—</span>
-                          <small class="d-none d-md-block text-muted" style="font-size: 0.68rem">未统计</small>
+                          <div class="small lh-sm">
+                            <div class="text-truncate"><span class="text-muted">↑</span>{{ c.traffic_up }}</div>
+                            <div class="text-truncate"><span class="text-muted">↓</span>{{ c.traffic_down }}</div>
+                          </div>
                         </td>
                         <td class="text-end panel-col-actions align-middle">
                           <div class="btn-group panel-actions" role="group" aria-label="操作">
@@ -246,7 +261,7 @@
               <dt class="col-sm-3">UUID</dt>
               <dd class="col-sm-9 text-break font-monospace small" id="detailUuid">—</dd>
               <dt class="col-sm-3">流量</dt>
-              <dd class="col-sm-9 text-muted">未采集（本面板仅维护配置，不含流量统计）</dd>
+              <dd class="col-sm-9 small text-muted" id="detailTraffic">—</dd>
             </dl>
           </div>
           <div class="modal-footer">
@@ -348,6 +363,23 @@
     tr.querySelector('.btn-detail').onclick = function () {
       document.getElementById('detailEmail').textContent = tr.dataset.email || '—';
       document.getElementById('detailUuid').textContent = tr.dataset.id || '—';
+      var dt = document.getElementById('detailTraffic');
+      var up = tr.dataset.trafficUp || '—';
+      var down = tr.dataset.trafficDown || '—';
+      var bu = tr.dataset.bytesUp;
+      var bd = tr.dataset.bytesDown;
+      dt.innerHTML =
+        '<div class="text-body">↑ ' +
+        up +
+        ' · ↓ ' +
+        down +
+        '</div>' +
+        '<div class="mt-1" style="font-size:0.75rem">原始字节：↑ ' +
+        (bu !== undefined && bu !== '' ? bu : '—') +
+        ' / ↓ ' +
+        (bd !== undefined && bd !== '' ? bd : '—') +
+        '</div>' +
+        '<div class="mt-1">本月累计（持久化文件 + 后台定时向 V2Ray 取增量）；换月自动归入新月份。</div>';
       modalDetail.show();
     };
     tr.querySelector('.btn-edit').onclick = function () {
@@ -395,6 +427,10 @@
       tr.dataset.index = c.index;
       tr.dataset.id = c.id;
       tr.dataset.email = c.email;
+      tr.dataset.bytesUp = String(c.bytes_up != null ? c.bytes_up : '');
+      tr.dataset.bytesDown = String(c.bytes_down != null ? c.bytes_down : '');
+      tr.dataset.trafficUp = c.traffic_up || '—';
+      tr.dataset.trafficDown = c.traffic_down || '—';
       var emailEsc = escapeAttr(c.email);
       tr.innerHTML =
         '<td class="panel-col-email">' +
@@ -404,8 +440,13 @@
         '"></strong>' +
         '</div></td>' +
         '<td class="panel-col-traffic align-middle text-center">' +
-        '<span class="fw-medium text-muted">—</span>' +
-        '<small class="d-none d-md-block text-muted" style="font-size:0.68rem">未统计</small></td>' +
+        '<div class="small lh-sm">' +
+        '<div class="text-truncate"><span class="text-muted">↑</span>' +
+        escapeAttr(c.traffic_up || '—') +
+        '</div>' +
+        '<div class="text-truncate"><span class="text-muted">↓</span>' +
+        escapeAttr(c.traffic_down || '—') +
+        '</div></div></td>' +
         '<td class="text-end panel-col-actions align-middle">' +
         '<div class="btn-group panel-actions" role="group" aria-label="操作">' +
         '<button type="button" class="btn btn-sm btn-outline-secondary btn-detail" title="详情"><i class="bx bx-show"></i></button>' +

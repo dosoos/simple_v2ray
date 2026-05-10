@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,9 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 
+from traffic_poller import start_traffic_poller_thread
+from traffic_store import get_store
+from v2ray_stats import enrich_clients_traffic
 from v2ray_config import (
     add_client,
     delete_client,
@@ -36,6 +40,9 @@ ASSETS_DIR = Path(__file__).parent / "sneat-1.0.0" / "assets"
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    get_store().load()
+    start_traffic_poller_thread()
+    logging.getLogger("uvicorn.error").info("流量采集线程已启动（按 TRAFFIC_POLL_INTERVAL_SEC 周期，reset 增量写入本月）")
     yield
 
 
@@ -101,9 +108,11 @@ def root() -> str:
 def panel_ui(request: Request) -> HTMLResponse:
     clients: list[dict[str, Any]] = []
     load_error: str | None = None
+    traffic_error: str | None = None
     try:
         cfg = _load_config_dict()
         clients = list_clients(cfg)
+        clients, traffic_error = enrich_clients_traffic(clients)
     except HTTPException as e:
         d = e.detail
         load_error = d if isinstance(d, str) else str(d)
@@ -117,6 +126,8 @@ def panel_ui(request: Request) -> HTMLResponse:
             "clients": clients,
             "config_path": str(CONFIG_PATH),
             "load_error": load_error,
+            "traffic_error": traffic_error,
+            "traffic_month": get_store().current_month_label(),
             "admin_user": os.environ.get("CADDY_ADMIN_USER", "admin"),
         },
     )
@@ -125,10 +136,13 @@ def panel_ui(request: Request) -> HTMLResponse:
 @app.get("/api/panel/clients")
 def api_list_clients() -> JSONResponse:
     cfg = _load_config_dict()
+    clients, traffic_error = enrich_clients_traffic(list_clients(cfg))
     return JSONResponse(
         content={
-            "clients": list_clients(cfg),
+            "clients": clients,
             "vmess": _vmess_meta(cfg),
+            "traffic_error": traffic_error,
+            "traffic_month": get_store().current_month_label(),
         }
     )
 

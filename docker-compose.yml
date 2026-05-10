@@ -4,8 +4,6 @@ x-app-env: &app_env
   V2RAY_CONFIG_PATH: /v2ray/config.json
   # 与 Caddy Basic Auth 用户名一致（面板右上角展示）
   CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}
-  # 可选：显式指定要重启的 v2ray 容器名/ID；不填时通过 compose 标签自动查找
-  V2RAY_DOCKER_CONTAINER: ${V2RAY_DOCKER_CONTAINER:-}
 
 services:
 

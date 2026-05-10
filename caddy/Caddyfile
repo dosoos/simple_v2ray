@@ -19,12 +19,16 @@
         reverse_proxy panel:8000
     }
 
+    # 仅匹配路径 /；必须写 root，否则 file_server 没有默认目录会 404
+    @site_root path /
+    handle @site_root {
+        root * /usr/share/caddy
+        file_server
+    }
+
     log {
         format console
     }
-
-    file_server
-    
 }
 
 http://localhost http://127.0.0.1 {

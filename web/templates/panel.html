@@ -44,15 +44,27 @@
         max-width: 100%;
         margin-bottom: 0;
       }
+      /* colgroup：先钉死流量 / 操作列宽，备注列占剩余空间，避免长备注挤扁后两列 */
+      .panel-table col.panel-col-traffic-def {
+        width: 7.5rem;
+      }
+      .panel-table col.panel-col-actions-def {
+        width: 8.5rem;
+      }
+      /* 备注列上限：宽屏不超过 22rem；窄屏为「整表宽度 − 流量/操作预留」，避免占满一行 */
+      .panel-table col.panel-col-email-def {
+        width: min(22rem, calc(100% - 17rem));
+        max-width: min(22rem, calc(100% - 17rem));
+        min-width: 0;
+      }
       .panel-table th,
       .panel-table td {
         vertical-align: middle;
       }
-      /* 固定：流量 | 操作（rem）；备注列吃掉剩余宽度（fixed 布局下的经典写法） */
       .panel-col-email {
-        width: auto;
-        max-width: 0;
         min-width: 0;
+        max-width: min(16rem, calc(100% - 18rem));
+        overflow: hidden;
       }
       .panel-email-inner {
         min-width: 0;
@@ -65,11 +77,9 @@
         text-overflow: ellipsis;
       }
       .panel-col-traffic {
-        width: 4.25rem;
         white-space: nowrap;
       }
       .panel-col-actions {
-        width: 7rem;
         white-space: nowrap;
         padding-left: 0.25rem !important;
       }
@@ -174,6 +184,11 @@
                 </div>
                 <div class="panel-table-wrap">
                   <table class="table table-hover panel-table">
+                    <colgroup>
+                      <col class="panel-col-email-def" />
+                      <col class="panel-col-traffic-def" />
+                      <col class="panel-col-actions-def" />
+                    </colgroup>
                     <thead>
                       <tr>
                         <th class="panel-col-email">用户（备注）</th>

@@ -2,7 +2,10 @@
 x-app-env: &app_env
   HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
   V2RAY_CONFIG_PATH: /v2ray/config.json
-  BACKUP_DIR: /v2ray/backups
+  # 与 Caddy Basic Auth 用户名一致（面板右上角展示）
+  CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}
+  # 可选：显式指定要重启的 v2ray 容器名/ID；不填时通过 compose 标签自动查找
+  V2RAY_DOCKER_CONTAINER: ${V2RAY_DOCKER_CONTAINER:-}
 
 services:
 
@@ -13,6 +16,8 @@ services:
     environment: *app_env
     volumes:
       - ./v2ray:/v2ray
+      # 供面板内「重启 V2Ray」调用 docker（等同宿主机执行 docker restart，请确保仅信任可登入面板的用户）
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - internal
 

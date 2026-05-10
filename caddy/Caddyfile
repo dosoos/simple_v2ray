@@ -8,20 +8,15 @@
     }
     reverse_proxy @v2ws v2ray:58888
 
-    # 管理面板与 API：由 Caddy Basic Auth 保护，反代到 FastAPI
+    # 面板、API 与 Sneat 静态资源（/assets/*）。勿仅用 path /panel*：部分 Caddy 版本不匹配 /panel/，会得到空响应（Content-Length: 0）
     @panel {
-        path /panel*
-        path /api/panel*
+        path_regexp panel_route ^/(panel|api/panel)(/.*)?$$|^/assets/
     }
     handle @panel {
         basicauth {
             {$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
         }
         reverse_proxy panel:8000
-    }
-
-    handle {
-        respond "VPC proxy" 200
     }
 
     log {

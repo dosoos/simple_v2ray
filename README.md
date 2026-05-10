@@ -1,6 +1,6 @@
 # 个人简易 VPN 代理（单节点）
 
-轻量单节点方案：**Caddy** 负责 TLS、WebSocket 反代与 **管理页 Basic 认证**；**FastAPI** 直接读写 `v2ray/config.json`（**无数据库**、无多节点）。提供配置编辑、**备份**与**导入/还原**，替代手写 shell 改配置。
+轻量单节点方案：**Caddy** 负责 TLS、WebSocket 反代与 **管理页 Basic 认证**；**FastAPI** 直接读写 `v2ray/config.json`（**无数据库**）。管理后台使用仓库内 **Sneat** 静态资源（`web/sneat-1.0.0/assets`，挂载 **`/assets/`**），**表格管理** VMess 用户（`alterId` / `level` 固定为 0，无需用户填写）；支持 **导出 / 导入** `config.json`（可选「覆盖完整文件」或仅 **合并用户列表**）。
 
 ## 文档
 
@@ -8,13 +8,13 @@
 
 ## 架构（简化）
 
-- **Caddy**：HTTPS、把 `/proxy` 反代到 V2Ray VMess 入站、把 `/panel` 与 `/api/panel` 用 Basic Auth 保护后反代到面板。
+- **Caddy**：HTTPS、把 `/proxy` 反代到 V2Ray VMess 入站；把 **`/panel`、`/api/panel`、`/assets`** 用 Basic Auth 保护后反代到面板（避免 Sneat 静态资源绕开路由）。
 - **V2Ray**：使用仓库内 `v2ray/config.json`（可经面板覆盖）。
-- **Panel（FastAPI）**：只操作文件，逻辑见 `web/main.py`。
+- **Panel（FastAPI）**：只操作文件；Sneat 样式挂载为 `/assets/*`，逻辑见 `web/main.py`、`web/v2ray_config.py`。
 
 ## 快速开始
 
-1. 复制环境变量：`cp .env.example .env`（生产环境请设置强密码的 `CADDY_ADMIN_HASH`，见下）。
+1. 复制环境变量：`cp .env.example .env`。若仍使用旧的 `ADMIN_USERNAME` / `ADMIN_PASSWORD`，请改为 **`CADDY_ADMIN_USER` + `CADDY_ADMIN_HASH`**（见 `.env.example`）。bcrypt 哈希里的 `$` 在 `.env` 中建议用**单引号**包住整段哈希，避免被 Compose 解析成变量。
 2. 启动：`docker compose up -d --build`。
 3. 浏览器打开管理页：`https://<HOST_DOMAIN>/panel/`（本机 HTTP：`http://127.0.0.1/panel/`）。  
    - 若未自定义 `CADDY_ADMIN_HASH`，默认用户名为 `admin`、密码为 **`changeme`**（仅试跑，上线前务必修改）。
@@ -40,15 +40,15 @@ docker compose restart v2ray
 | `HOST_DOMAIN` | Caddy 站点名与 TLS 域名；本地可用 `localhost` |
 | `CADDY_ADMIN_USER` | Basic 认证用户名（默认 `admin`） |
 | `CADDY_ADMIN_HASH` | 密码的 bcrypt 哈希；不填则使用 compose 内建默认（密码 `changeme`） |
+| `V2RAY_DOCKER_CONTAINER` | （可选）面板「重启 V2Ray」时指定容器名或 ID；不设则按 Compose 标签自动查找 `v2ray` 服务 |
 
-面板进程读取：`V2RAY_CONFIG_PATH`（默认 `/v2ray/config.json`）、`BACKUP_DIR`（默认 `/v2ray/backups`）。
+面板进程读取：`V2RAY_CONFIG_PATH`（默认 `/v2ray/config.json`）。Compose 已为 **panel** 挂载 **`/var/run/docker.sock`**，便于在后台一键 **`docker restart`** 重启 **v2ray**（等同在宿主机执行；请确保面板账号密码强度足够，避免泄露 Docker 控制权）。
 
 ## 本地开发（可选）
 
 ```bash
 cd web && pip install -r requirements.txt
 export V2RAY_CONFIG_PATH="$(pwd)/../v2ray/config.json"
-export BACKUP_DIR="$(pwd)/../v2ray/backups"
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -58,4 +58,5 @@ uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 - `web/`：FastAPI 应用与 Dockerfile  
 - `caddy/`：`Caddyfile`  
-- `v2ray/`：`config.json` 与备份目录（运行时挂载）
+- `v2ray/`：`config.json`（运行时挂载）
+- `web/sneat-1.0.0/assets/`：Sneat 主题 CSS/JS（管理页 `/assets/*`）

@@ -1,112 +1,490 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>V2Ray 配置</title>
-  <style>
-    :root { color-scheme: dark light; }
-    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 1.25rem; max-width: 960px; }
-    h1 { font-size: 1.25rem; }
-    textarea { width: 100%; min-height: 420px; font-family: ui-monospace, monospace; font-size: 13px; padding: 0.75rem; box-sizing: border-box; }
-    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; align-items: center; }
-    button, .btn { padding: 0.4rem 0.75rem; cursor: pointer; }
-    .muted { color: #666; font-size: 0.85rem; }
-    .err { color: #b00020; white-space: pre-wrap; }
-    .ok { color: #0a7; }
-    ul.backups { list-style: none; padding: 0; margin: 0; }
-    ul.backups li { margin: 0.35rem 0; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    code { font-size: 0.85em; }
-  </style>
-</head>
-<body>
-  <h1>V2Ray <code>config.json</code></h1>
-  <p class="muted">路径：<code>{{ config_path }}</code> · 备份目录：<code>{{ backup_dir }}</code></p>
-  <textarea id="cfg" spellcheck="false">{{ config_text }}</textarea>
-  <div class="row">
-    <button type="button" id="btnSave">保存配置</button>
-    <button type="button" id="btnBackup">生成备份文件</button>
-    <a class="btn" id="lnkDl" href="/api/panel/config" download="config.json">下载当前配置</a>
-  </div>
-  <div class="row">
-    <label>从文件导入（覆盖当前）：<input type="file" id="fileImp" accept="application/json,.json"/></label>
-    <button type="button" id="btnImp">上传并写入</button>
-  </div>
-  <p class="muted">修改写入后，通常需要重启 V2Ray 容器才能生效：<code>docker compose restart v2ray</code></p>
-  <div id="msg"></div>
+<html
+  lang="zh-CN"
+  class="light-style layout-menu-fixed"
+  dir="ltr"
+  data-theme="theme-default"
+  data-assets-path="/assets/"
+  data-template="vertical-menu-template-free"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <title>VPC 代理 · 用户管理</title>
+    <link rel="icon" type="image/x-icon" href="/assets/img/favicon/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/vendor/fonts/boxicons.css" />
+    <link rel="stylesheet" href="/assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="/assets/css/demo.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <script src="/assets/vendor/js/helpers.js"></script>
+    <script src="/assets/js/config.js"></script>
+    <style>
+      /* 三列固定宽度占满 100%，不出现横向滚动条；备注列超长省略为 … */
+      .panel-table-card {
+        overflow: hidden;
+      }
+      /* Sneat 有时给 table 设 min-width，会导致窄屏横向溢出 */
+      .panel-table-card .panel-table {
+        min-width: 0 !important;
+      }
+      .panel-table-wrap {
+        overflow-x: hidden;
+        width: 100%;
+      }
+      .panel-table {
+        table-layout: fixed;
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 0;
+      }
+      .panel-table th,
+      .panel-table td {
+        vertical-align: middle;
+      }
+      /* 固定：流量 | 操作（rem）；备注列吃掉剩余宽度（fixed 布局下的经典写法） */
+      .panel-col-email {
+        width: auto;
+        max-width: 0;
+        min-width: 0;
+      }
+      .panel-email-inner {
+        min-width: 0;
+        overflow: hidden;
+      }
+      .panel-email-inner .email-truncate {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .panel-col-traffic {
+        width: 4.25rem;
+        white-space: nowrap;
+      }
+      .panel-col-actions {
+        width: 7rem;
+        white-space: nowrap;
+        padding-left: 0.25rem !important;
+      }
+      .panel-actions .btn {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+      }
+      .panel-actions .btn i {
+        font-size: 1.1rem;
+      }
+      .panel-nav-user {
+        max-width: 10rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+        <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+          <div class="app-brand demo">
+            <a href="/panel/" class="app-brand-link">
+              <span class="app-brand-text demo menu-text fw-bolder ms-2">VPC Panel</span>
+            </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+              <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+          </div>
+          <div class="menu-inner-shadow"></div>
+          <ul class="menu-inner py-1">
+            <li class="menu-item active">
+              <a href="/panel/" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user-circle"></i>
+                <div>代理用户</div>
+              </a>
+            </li>
+          </ul>
+        </aside>
 
-  <h2 style="font-size:1rem;margin-top:1.5rem;">备份列表</h2>
-  {% if backups %}
-  <ul class="backups">
-    {% for b in backups %}
-    <li>
-      <code>{{ b }}</code>
-      <a href="/api/panel/backups/{{ b }}">下载</a>
-      <button type="button" class="btnRestore" data-file="{{ b }}">还原覆盖</button>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="muted">暂无备份，点击「生成备份文件」创建。</p>
-  {% endif %}
+        <div class="layout-page">
+          <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)"><i class="bx bx-menu bx-sm"></i></a>
+            </div>
+            <div class="navbar-nav-right d-flex flex-grow-1 align-items-center justify-content-end">
+              <ul class="navbar-nav flex-row align-items-center gap-1 ms-auto">
+                <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                  <a
+                    class="nav-link dropdown-toggle hide-arrow p-1 d-flex align-items-center"
+                    href="javascript:void(0);"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <div class="avatar avatar-online">
+                      <img src="/assets/img/avatars/1.png" alt="" class="w-px-40 h-auto rounded-circle" width="40" height="40" />
+                    </div>
+                    <span class="ms-2 text-body fw-medium d-none d-sm-inline text-truncate panel-nav-user">{{ admin_user }}</span>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <span class="dropdown-item-text small text-muted px-4 py-1">已登录</span>
+                    </li>
+                    <li>
+                      <button type="button" class="dropdown-item" id="btnRestartV2ray">
+                        <i class="bx bx-refresh me-2"></i>重启 V2Ray
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                      <a class="dropdown-item" href="#" id="btnLogout"><i class="bx bx-power-off me-2"></i>退出登录</a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </nav>
 
-  <script>
-    const msg = document.getElementById('msg');
-    function show(text, ok) {
-      msg.innerHTML = '<p class="' + (ok ? 'ok' : 'err') + '">' + text + '</p>';
-    }
-    document.getElementById('btnSave').onclick = async () => {
-      try {
-        const r = await fetch('/api/panel/config', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: document.getElementById('cfg').value
-        });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.detail || r.statusText);
-        show('已保存。请按需重启 v2ray。', true);
-      } catch (e) { show(String(e), false); }
-    };
-    document.getElementById('btnBackup').onclick = async () => {
-      try {
-        const r = await fetch('/api/panel/backups', { method: 'POST' });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.detail || r.statusText);
-        show('已写入备份：' + j.file + '。刷新页面可看到列表。', true);
-        setTimeout(() => location.reload(), 800);
-      } catch (e) { show(String(e), false); }
-    };
-    document.getElementById('btnImp').onclick = async () => {
-      const f = document.getElementById('fileImp').files[0];
-      if (!f) { show('请先选择 JSON 文件', false); return; }
-      const fd = new FormData(); fd.append('file', f);
-      try {
-        const r = await fetch('/api/panel/import', { method: 'POST', body: fd });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.detail || r.statusText);
-        show('已导入并保存。', true);
-        const data = await fetch('/api/panel/config').then(r => r.json());
-        document.getElementById('cfg').value = data.json != null
-          ? JSON.stringify(data.json, null, 2)
-          : (data.raw || '');
-      } catch (e) { show(String(e), false); }
-    };
-    document.querySelectorAll('.btnRestore').forEach(btn => {
-      btn.onclick = async () => {
-        const file = btn.getAttribute('data-file');
-        if (!confirm('确定用「' + file + '」覆盖当前 config.json？')) return;
-        try {
-          const r = await fetch('/api/panel/restore/' + encodeURIComponent(file), { method: 'POST' });
-          const j = await r.json();
-          if (!r.ok) throw new Error(j.detail || r.statusText);
-          const data = await fetch('/api/panel/config').then(r => r.json());
-          document.getElementById('cfg').value = data.json != null
-            ? JSON.stringify(data.json, null, 2)
-            : (data.raw || '');
-          show('已从备份还原。', true);
-        } catch (e) { show(String(e), false); }
-      };
+          <div class="content-wrapper">
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div id="flashArea"></div>
+
+              {% if load_error %}
+              <div class="alert alert-danger" role="alert">{{ load_error }}</div>
+              {% endif %}
+
+              <div class="card mb-3 panel-table-card">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between gap-2">
+                  <h5 class="mb-0 flex-shrink-1 text-truncate">用户列表</h5>
+                  <button type="button" class="btn btn-primary btn-sm flex-shrink-0" id="btnAdd"><i class="bx bx-plus me-1"></i>新增用户</button>
+                </div>
+                <div class="panel-table-wrap">
+                  <table class="table table-hover panel-table">
+                    <thead>
+                      <tr>
+                        <th class="panel-col-email">用户（备注）</th>
+                        <th class="panel-col-traffic text-center">流量</th>
+                        <th class="text-end panel-col-actions">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody" class="table-border-bottom-0">
+                      {% for c in clients %}
+                      <tr data-index="{{ c.index }}" data-id="{{ c.id|e }}" data-email="{{ c.email|e }}">
+                        <td class="panel-col-email">
+                          <div class="panel-email-inner">
+                            <strong class="email-truncate" title="{{ c.email }}">{{ c.email }}</strong>
+                          </div>
+                        </td>
+                        <td class="panel-col-traffic align-middle text-center">
+                          <span class="fw-medium text-muted">—</span>
+                          <small class="d-none d-md-block text-muted" style="font-size: 0.68rem">未统计</small>
+                        </td>
+                        <td class="text-end panel-col-actions align-middle">
+                          <div class="btn-group panel-actions" role="group" aria-label="操作">
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-detail" title="详情"><i class="bx bx-show"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-edit" title="编辑"><i class="bx bx-edit-alt"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-del" title="删除"><i class="bx bx-trash"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% if not clients and not load_error %}
+                <div class="card-body"><p class="text-muted mb-0">暂无用户，请点击「新增用户」。</p></div>
+                {% endif %}
+              </div>
+
+              <div class="card">
+                <div class="card-header d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2">
+                  <h5 class="mb-0">配置导入 / 导出</h5>
+                  <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center">
+                    <a href="/api/panel/export" download="config.json" class="btn btn-primary btn-sm">
+                      <i class="bx bx-download me-1"></i>导出 config.json
+                    </a>
+                    <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center flex-grow-1">
+                      <input type="file" id="fileImp" class="form-control form-control-sm" accept="application/json,.json" />
+                      <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="chkOverwrite" />
+                        <label class="form-check-label small" for="chkOverwrite">覆盖完整文件（危险）</label>
+                      </div>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" id="btnImp"><i class="bx bx-upload me-1"></i>上传导入</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body py-2">
+                  <small class="text-muted">不勾选「覆盖」时，仅合并 JSON 中 VMess 入站用户列表（按备注去重）。配置文件：<code>{{ config_path }}</code></small>
+                </div>
+              </div>
+            </div>
+
+            <footer class="content-footer footer bg-footer-theme">
+              <div class="container-xxl py-3">
+                <small class="text-muted">VPC Panel · VMess 用户</small>
+              </div>
+            </footer>
+            <div class="content-backdrop fade"></div>
+          </div>
+        </div>
+      </div>
+      <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">用户详情</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <dl class="row mb-0">
+              <dt class="col-sm-3">备注</dt>
+              <dd class="col-sm-9" id="detailEmail">—</dd>
+              <dt class="col-sm-3">UUID</dt>
+              <dd class="col-sm-9 text-break font-monospace small" id="detailUuid">—</dd>
+              <dt class="col-sm-3">流量</dt>
+              <dd class="col-sm-9 text-muted">未采集（本面板仅维护配置，不含流量统计）</dd>
+            </dl>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">关闭</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEditTitle">编辑用户</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="fIndex" value="" />
+            <div class="mb-3">
+              <label class="form-label" for="fEmail">备注（email）</label>
+              <input type="text" class="form-control" id="fEmail" required autocomplete="off" />
+            </div>
+            <div class="mb-0">
+              <label class="form-label" for="fId">UUID</label>
+              <input type="text" class="form-control font-monospace small" id="fId" autocomplete="off" />
+              <div class="form-text">新增可留空自动生成；编辑可修改（须为合法 UUID）</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-primary" id="btnModalSave">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="/assets/vendor/libs/popper/popper.js"></script>
+    <script src="/assets/vendor/js/bootstrap.js"></script>
+    <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="/assets/vendor/js/menu.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <script>
+(function () {
+  const fetchOpts = { credentials: 'same-origin' };
+  const flashArea = document.getElementById('flashArea');
+  const tbody = document.getElementById('tbody');
+  const modalDetailEl = document.getElementById('modalDetail');
+  const modalEditEl = document.getElementById('modalEdit');
+  const modalDetail = modalDetailEl ? new bootstrap.Modal(modalDetailEl) : null;
+  const modalEdit = modalEditEl ? new bootstrap.Modal(modalEditEl) : null;
+
+  var btnLogout = document.getElementById('btnLogout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', function (e) {
+      e.preventDefault();
+      /* Basic Auth：用错误账号触发浏览器放弃缓存凭据（各浏览器表现略有差异） */
+      var h = location.host;
+      var p = location.protocol;
+      window.location.href = p + '//log:out@' + h + location.pathname + '?_=' + Date.now();
     });
-  </script>
-</body>
+  }
+
+  function apiErrDetail(j) {
+    if (!j || typeof j.detail === 'undefined') return '';
+    var d = j.detail;
+    if (typeof d === 'string') return d;
+    if (Array.isArray(d)) return d.map(function (x) { return x.msg || String(x); }).join('; ');
+    return JSON.stringify(d);
+  }
+
+  var btnRestartV2ray = document.getElementById('btnRestartV2ray');
+  if (btnRestartV2ray) {
+    btnRestartV2ray.addEventListener('click', async function () {
+      if (!confirm('确定重启 V2Ray 容器？代理连接会短暂中断。')) return;
+      btnRestartV2ray.disabled = true;
+      try {
+        var r = await fetch('/api/panel/restart-v2ray', { ...fetchOpts, method: 'POST' });
+        var j = await r.json().catch(function () { return {}; });
+        if (!r.ok) throw new Error(apiErrDetail(j) || r.statusText);
+        flash('已发送重启：' + (j.target || 'v2ray'), true);
+      } catch (e) {
+        flash(String(e.message || e), false);
+      } finally {
+        btnRestartV2ray.disabled = false;
+      }
+    });
+  }
+
+  function flash(msg, ok) {
+    if (!flashArea) return;
+    flashArea.innerHTML =
+      '<div class="alert alert-' + (ok ? 'success' : 'danger') + ' alert-dismissible" role="alert">' +
+      msg +
+      '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+  }
+
+  function bindRow(tr) {
+    tr.querySelector('.btn-detail').onclick = function () {
+      document.getElementById('detailEmail').textContent = tr.dataset.email || '—';
+      document.getElementById('detailUuid').textContent = tr.dataset.id || '—';
+      modalDetail.show();
+    };
+    tr.querySelector('.btn-edit').onclick = function () {
+      document.getElementById('modalEditTitle').textContent = '编辑用户';
+      document.getElementById('fIndex').value = tr.dataset.index;
+      document.getElementById('fEmail').value = tr.dataset.email || '';
+      document.getElementById('fId').value = tr.dataset.id || '';
+      modalEdit.show();
+    };
+    tr.querySelector('.btn-del').onclick = async function () {
+      if (!confirm('删除用户「' + tr.dataset.email + '」？')) return;
+      try {
+        const r = await fetch('/api/panel/clients/' + tr.dataset.index, { ...fetchOpts, method: 'DELETE' });
+        const j = await r.json().catch(function () { return {}; });
+        if (!r.ok) throw new Error(j.detail || r.statusText);
+        flash('已删除。请按需重启 v2ray。', true);
+        await refreshTable();
+      } catch (e) {
+        flash(String(e), false);
+      }
+    };
+  }
+
+  if (tbody) {
+    tbody.querySelectorAll('tr').forEach(bindRow);
+  }
+
+  async function refreshTable() {
+    if (!tbody) return;
+    const r = await fetch('/api/panel/clients', fetchOpts);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || r.statusText);
+    tbody.innerHTML = '';
+
+    function escapeAttr(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    (j.clients || []).forEach(function (c) {
+      var tr = document.createElement('tr');
+      tr.dataset.index = c.index;
+      tr.dataset.id = c.id;
+      tr.dataset.email = c.email;
+      var emailEsc = escapeAttr(c.email);
+      tr.innerHTML =
+        '<td class="panel-col-email">' +
+        '<div class="panel-email-inner">' +
+        '<strong class="email-truncate" title="' +
+        emailEsc +
+        '"></strong>' +
+        '</div></td>' +
+        '<td class="panel-col-traffic align-middle text-center">' +
+        '<span class="fw-medium text-muted">—</span>' +
+        '<small class="d-none d-md-block text-muted" style="font-size:0.68rem">未统计</small></td>' +
+        '<td class="text-end panel-col-actions align-middle">' +
+        '<div class="btn-group panel-actions" role="group" aria-label="操作">' +
+        '<button type="button" class="btn btn-sm btn-outline-secondary btn-detail" title="详情"><i class="bx bx-show"></i></button>' +
+        '<button type="button" class="btn btn-sm btn-outline-primary btn-edit" title="编辑"><i class="bx bx-edit-alt"></i></button>' +
+        '<button type="button" class="btn btn-sm btn-outline-danger btn-del" title="删除"><i class="bx bx-trash"></i></button>' +
+        '</div></td>';
+      tr.cells[0].querySelector('strong').textContent = c.email;
+      bindRow(tr);
+      tbody.appendChild(tr);
+    });
+  }
+
+  var btnAdd = document.getElementById('btnAdd');
+  if (btnAdd) {
+    btnAdd.onclick = function () {
+      document.getElementById('modalEditTitle').textContent = '新增用户';
+      document.getElementById('fIndex').value = '';
+      document.getElementById('fEmail').value = '';
+      document.getElementById('fId').value = '';
+      modalEdit.show();
+    };
+  }
+
+  document.getElementById('btnModalSave').onclick = async function () {
+    var payload = { email: document.getElementById('fEmail').value.trim() };
+    var idv = document.getElementById('fId').value.trim();
+    if (idv) payload.id = idv;
+    if (!payload.email) {
+      flash('请填写备注', false);
+      return;
+    }
+    var idx = document.getElementById('fIndex').value;
+    try {
+      var r;
+      if (idx === '') {
+        r = await fetch('/api/panel/clients', {
+          ...fetchOpts,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        r = await fetch('/api/panel/clients/' + idx, {
+          ...fetchOpts,
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+      var j = await r.json().catch(function () { return {}; });
+      if (!r.ok) throw new Error(j.detail || r.statusText);
+      flash('已保存。请按需重启 v2ray。', true);
+      modalEdit.hide();
+      await refreshTable();
+    } catch (e) {
+      flash(String(e), false);
+    }
+  };
+
+  document.getElementById('btnImp').onclick = async function () {
+    var f = document.getElementById('fileImp').files[0];
+    if (!f) {
+      flash('请选择 JSON 文件', false);
+      return;
+    }
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('overwrite', document.getElementById('chkOverwrite').checked ? '1' : '0');
+    try {
+      var r = await fetch('/api/panel/import', { ...fetchOpts, method: 'POST', body: fd });
+      var j = await r.json();
+      if (!r.ok) throw new Error(j.detail || r.statusText);
+      flash(j.mode === 'full_replace' ? '已完整覆盖配置' : '已合并用户列表', true);
+      await refreshTable();
+    } catch (e) {
+      flash(String(e), false);
+    }
+  };
+})();
+    </script>
+  </body>
 </html>

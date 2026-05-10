@@ -45,7 +45,6 @@ web/v2ray_stats_command_pb2_grpc.py
 
 # —— V2Ray ——
 v2ray/log/
-v2ray/backups/
 
 # —— Caddy：保留 Caddyfile；忽略本地证书与数据 ——
 caddy/data/

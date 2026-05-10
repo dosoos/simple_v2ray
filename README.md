@@ -9,13 +9,13 @@
 ## 架构（简化）
 
 - **Caddy**：HTTPS、把 **`/api`（WebSocket）** 反代到 V2Ray VMess 入站；把 **`/panel`（含 `/panel/api/*` 管理接口）与 `/assets`** 用 Basic Auth 保护后反代到面板（避免 Sneat 静态资源绕开路由）。
-- **V2Ray**：使用仓库内 `v2ray/config.json`（可经面板覆盖）。
+- **V2Ray**：运行时配置为挂载目录中的 **`v2ray/config.json`（不纳入 Git）**；仓库保留 **`v2ray/config.default.json`**（空 VMess 用户列表）作为模板。**面板首次启动**若发现没有 `config.json`，会从模板复制一份；也可手动 `cp v2ray/config.default.json v2ray/config.json`。
 - **Panel（FastAPI）**：只操作文件；Sneat 样式挂载为 `/assets/*`，逻辑见 `web/main.py`、`web/v2ray_config.py`。
 
 ## 快速开始
 
 1. 复制环境变量：`cp .env.example .env`。若仍使用旧的 `ADMIN_USERNAME` / `ADMIN_PASSWORD`，请改为 **`CADDY_ADMIN_USER` + `CADDY_ADMIN_HASH`**（见 `.env.example`）。bcrypt 哈希里的 `$` 在 `.env` 中建议用**单引号**包住整段哈希，避免被 Compose 解析成变量。
-2. 启动：`docker compose up -d --build`。
+2. 启动：`docker compose up -d --build`。（`v2ray/config.json` 不入库；首次启动 **panel** 会从模板生成；**v2ray** 在 compose 中依赖 **panel** 晚启动，以减少竞争。）
 3. 浏览器打开管理页：`https://<HOST_DOMAIN>/panel/`（本机 HTTP：`http://127.0.0.1/panel/`）。  
    - 若未自定义 `CADDY_ADMIN_HASH`，默认用户名为 `admin`、密码为 **`changeme`**（仅试跑，上线前务必修改）。
 

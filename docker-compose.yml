@@ -25,6 +25,8 @@ services:
     volumes:
       - ./v2ray:/etc/v2ray
     command: run -c /etc/v2ray/config.json
+    depends_on:
+      - panel
     networks:
       - internal
 

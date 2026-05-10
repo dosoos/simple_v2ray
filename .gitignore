@@ -46,6 +46,8 @@ web/v2ray_stats_command_pb2_grpc.py
 # —— V2Ray ——
 v2ray/log/
 v2ray/panel_traffic*.json
+# 运行时由用户维护；仓库仅保留 config.default.json 作为模板
+v2ray/config.json
 
 # —— Caddy：保留 Caddyfile；忽略本地证书与数据 ——
 caddy/data/

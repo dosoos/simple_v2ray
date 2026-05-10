@@ -9,6 +9,7 @@ COPY requirements.txt /app/requirements.txt
 RUN apk add --no-cache docker-cli \
     && pip install --no-cache-dir -r /app/requirements.txt
 
+COPY default_v2ray_config.json /app/default_v2ray_config.json
 COPY main.py v2ray_config.py v2ray_stats.py share_links.py traffic_store.py traffic_poller.py stats_command_pb2.py stats_command_pb2_grpc.py /app/
 COPY templates /app/templates/
 COPY sneat-1.0.0/assets /app/sneat-1.0.0/assets

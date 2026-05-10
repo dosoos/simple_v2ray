@@ -37,6 +37,42 @@ CONFIG_PATH = Path(os.environ.get("V2RAY_CONFIG_PATH", "/v2ray/config.json")).re
 
 DOCKER_SOCK = Path(os.environ.get("DOCKER_SOCKET_PATH", "/var/run/docker.sock"))
 
+
+def ensure_runtime_config_file() -> None:
+    """若无 config.json，则从 config.default.json（同目录）复制；若无同目录模板再尝试其它来源。"""
+    if CONFIG_PATH.is_file():
+        return
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    log = logging.getLogger("uvicorn.error")
+
+    env_src = os.environ.get("V2RAY_DEFAULT_CONFIG_PATH", "").strip()
+    if env_src:
+        p = Path(env_src).resolve()
+        if p.is_file():
+            shutil.copyfile(p, CONFIG_PATH)
+            log.info("已创建 %s（来自 V2RAY_DEFAULT_CONFIG_PATH）", CONFIG_PATH)
+            return
+
+    sibling_default = CONFIG_PATH.with_name("config.default.json")
+    if sibling_default.is_file():
+        shutil.copyfile(sibling_default, CONFIG_PATH)
+        log.info("已创建 %s（复制同目录 config.default.json）", CONFIG_PATH)
+        return
+
+    for src in (
+        Path(__file__).resolve().parent / "default_v2ray_config.json",
+        Path(__file__).resolve().parent.parent / "v2ray" / "config.default.json",
+    ):
+        if src.is_file():
+            shutil.copyfile(src, CONFIG_PATH)
+            log.info("已创建 %s（来源 %s）", CONFIG_PATH, src)
+            return
+
+    raise RuntimeError(
+        "无法初始化 V2Ray 配置：未找到 config.default.json（与 config.json 同目录）或内置模板。"
+        "可设置环境变量 V2RAY_DEFAULT_CONFIG_PATH。"
+    )
+
 # Sneat 主题静态资源（与 `sneat-1.0.0/html` 中 `../assets/` 一致）
 ASSETS_DIR = Path(__file__).parent / "sneat-1.0.0" / "assets"
 
@@ -44,6 +80,7 @@ ASSETS_DIR = Path(__file__).parent / "sneat-1.0.0" / "assets"
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ensure_runtime_config_file()
     get_store().load()
     start_traffic_poller_thread()
     logging.getLogger("uvicorn.error").info("流量采集线程已启动（按 TRAFFIC_POLL_INTERVAL_SEC 周期，reset 增量写入本月）")

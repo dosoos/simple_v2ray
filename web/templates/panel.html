@@ -83,6 +83,16 @@
       .panel-nav-user {
         max-width: 10rem;
       }
+      #modalDetail .panel-detail-qr {
+        max-width: 220px;
+        width: 100%;
+        height: auto;
+      }
+      #modalDetail .nav-tabs .nav-link {
+        font-size: 0.85rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
     </style>
   </head>
   <body>
@@ -248,21 +258,103 @@
     </div>
 
     <div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">用户详情</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <dl class="row mb-0">
+            <dl class="row mb-2 small">
               <dt class="col-sm-3">备注</dt>
               <dd class="col-sm-9" id="detailEmail">—</dd>
               <dt class="col-sm-3">UUID</dt>
               <dd class="col-sm-9 text-break font-monospace small" id="detailUuid">—</dd>
               <dt class="col-sm-3">流量</dt>
               <dd class="col-sm-9 small text-muted" id="detailTraffic">—</dd>
+              <dt class="col-sm-3">对端</dt>
+              <dd class="col-sm-9 font-monospace small" id="detailEndpointStr">—</dd>
             </dl>
+            <div id="detailHostHint" class="alert alert-warning py-2 small mb-3 d-none" role="alert"></div>
+
+            <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link active"
+                  id="tabBtnSr"
+                  data-bs-toggle="tab"
+                  data-bs-target="#tabShareSr"
+                  type="button"
+                  role="tab"
+                  aria-controls="tabShareSr"
+                  aria-selected="true"
+                >
+                  Shadowrocket
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link"
+                  id="tabBtnClash"
+                  data-bs-toggle="tab"
+                  data-bs-target="#tabShareClash"
+                  type="button"
+                  role="tab"
+                  aria-controls="tabShareClash"
+                  aria-selected="false"
+                >
+                  Clash
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link"
+                  id="tabBtnV2"
+                  data-bs-toggle="tab"
+                  data-bs-target="#tabShareV2"
+                  type="button"
+                  role="tab"
+                  aria-controls="tabShareV2"
+                  aria-selected="false"
+                >
+                  V2Ray
+                </button>
+              </li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="tabShareSr" role="tabpanel" aria-labelledby="tabBtnSr">
+                <div class="text-center mb-3">
+                  <canvas id="qrSr" width="200" height="200" class="panel-detail-qr mx-auto border rounded bg-white"></canvas>
+                  <div id="qrSrFallback" class="small text-muted mt-1 d-none">无法生成二维码时，请使用下方复制链接。</div>
+                </div>
+                <label class="form-label small text-muted mb-1">vmess 分享链接</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" readonly class="form-control font-monospace small" id="txtVmess" autocomplete="off" />
+                  <button type="button" class="btn btn-outline-primary" id="btnCopyVmess">复制</button>
+                </div>
+                <p class="small text-muted mt-2 mb-0">小火箭：扫码或复制链接导入。</p>
+              </div>
+              <div class="tab-pane fade" id="tabShareClash" role="tabpanel" aria-labelledby="tabBtnClash">
+                <div class="text-center mb-3">
+                  <canvas id="qrClash" width="200" height="200" class="panel-detail-qr mx-auto border rounded bg-white"></canvas>
+                  <div id="qrClashFallback" class="small text-muted mt-1 d-none">YAML 过长或脚本未加载时，请复制文本导入。</div>
+                </div>
+                <label class="form-label small text-muted mb-1">Clash / Clash Meta（单节点 YAML）</label>
+                <textarea readonly class="form-control font-monospace small mb-2" id="txtClash" rows="10" autocomplete="off"></textarea>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnCopyClash">复制 YAML</button>
+                <p class="small text-muted mt-2 mb-0">推荐复制；部分客户端支持扫描 YAML 二维码。</p>
+              </div>
+              <div class="tab-pane fade" id="tabShareV2" role="tabpanel" aria-labelledby="tabBtnV2">
+                <div class="text-center mb-3">
+                  <canvas id="qrV2" width="200" height="200" class="panel-detail-qr mx-auto border rounded bg-white"></canvas>
+                  <div id="qrV2Fallback" class="small text-muted mt-1 d-none">无法生成二维码时，请复制 JSON 或 vmess 链接。</div>
+                </div>
+                <label class="form-label small text-muted mb-1">V2Ray / Xray 出站（outbound）JSON</label>
+                <textarea readonly class="form-control font-monospace small mb-2" id="txtV2ray" rows="12" autocomplete="off"></textarea>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnCopyV2">复制 JSON</button>
+                <p class="small text-muted mt-2 mb-0">v2rayN、Nekoray 等也可使用 Shadowrocket 标签中的 vmess 链接。</p>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">关闭</button>
@@ -304,6 +396,7 @@
     <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="/assets/vendor/js/menu.js"></script>
     <script src="/assets/js/main.js"></script>
+    <script src="/assets/vendor/libs/qrcode/qrcode.min.js"></script>
     <script>
 (function () {
   const fetchOpts = { credentials: 'same-origin' };
@@ -359,8 +452,91 @@
       '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
   }
 
+  function copyInputOrTextarea(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var t = el.value;
+    navigator.clipboard.writeText(t).then(
+      function () {
+        flash('已复制到剪贴板', true);
+      },
+      function () {
+        flash('复制失败', false);
+      }
+    );
+  }
+
+  function paintQr(canvasId, text, fallbackElId) {
+    var canvas = document.getElementById(canvasId);
+    var fb = document.getElementById(fallbackElId);
+    if (!canvas) return;
+    if (fb) {
+      fb.classList.add('d-none');
+    }
+    var ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    if (!text) return;
+    if (typeof QRCode === 'undefined') {
+      if (fb) {
+        fb.textContent = '二维码脚本未加载，请使用复制';
+        fb.classList.remove('d-none');
+      }
+      return;
+    }
+    QRCode.toCanvas(
+      canvas,
+      text,
+      { width: 200, margin: 2, errorCorrectionLevel: 'M' },
+      function (err) {
+        if (err) {
+          console.error(err);
+          if (fb) {
+            fb.textContent = '二维码生成失败，请复制文本';
+            fb.classList.remove('d-none');
+          }
+        }
+      }
+    );
+  }
+
+  function applySharePayload(sj) {
+    var ep = document.getElementById('detailEndpointStr');
+    if (ep) {
+      if (sj) {
+        ep.textContent =
+          (sj.public_tls ? 'TLS ' : '') + sj.public_host + ':' + sj.public_port + (sj.network ? ' · ' + sj.network : '');
+      } else {
+        ep.textContent = '—';
+      }
+    }
+    var hint = document.getElementById('detailHostHint');
+    if (hint) {
+      if (sj && sj.host_hint) {
+        hint.textContent = sj.host_hint;
+        hint.classList.remove('d-none');
+      } else {
+        hint.textContent = '';
+        hint.classList.add('d-none');
+      }
+    }
+    var vmessEl = document.getElementById('txtVmess');
+    var clashEl = document.getElementById('txtClash');
+    var v2El = document.getElementById('txtV2ray');
+    if (vmessEl) vmessEl.value = (sj && sj.vmess_uri) || '';
+    if (clashEl) clashEl.value = (sj && sj.clash_yaml) || '';
+    if (v2El) v2El.value = (sj && sj.v2ray_outbound_json) || '';
+    var uri = (sj && sj.vmess_uri) || '';
+    var yaml = (sj && sj.clash_yaml) || '';
+    paintQr('qrSr', uri, 'qrSrFallback');
+    paintQr('qrClash', yaml, 'qrClashFallback');
+    paintQr('qrV2', uri, 'qrV2Fallback');
+  }
+
   function bindRow(tr) {
-    tr.querySelector('.btn-detail').onclick = function () {
+    tr.querySelector('.btn-detail').onclick = async function () {
       document.getElementById('detailEmail').textContent = tr.dataset.email || '—';
       document.getElementById('detailUuid').textContent = tr.dataset.id || '—';
       var dt = document.getElementById('detailTraffic');
@@ -380,7 +556,35 @@
         (bd !== undefined && bd !== '' ? bd : '—') +
         '</div>' +
         '<div class="mt-1">本月累计（持久化文件 + 后台定时向 V2Ray 取增量）；换月自动归入新月份。</div>';
+      var ep = document.getElementById('detailEndpointStr');
+      if (ep) ep.textContent = '加载中…';
+      var vmessEl = document.getElementById('txtVmess');
+      var clashEl = document.getElementById('txtClash');
+      var v2El = document.getElementById('txtV2ray');
+      if (vmessEl) vmessEl.value = '';
+      if (clashEl) clashEl.value = '';
+      if (v2El) v2El.value = '';
+      var hintPre = document.getElementById('detailHostHint');
+      if (hintPre) {
+        hintPre.textContent = '';
+        hintPre.classList.add('d-none');
+      }
+      paintQr('qrSr', '', 'qrSrFallback');
+      paintQr('qrClash', '', 'qrClashFallback');
+      paintQr('qrV2', '', 'qrV2Fallback');
       modalDetail.show();
+      try {
+        var idx = tr.dataset.index;
+        var rs = await fetch('/api/panel/clients/' + encodeURIComponent(idx) + '/share', fetchOpts);
+        var sj = await rs.json().catch(function () {
+          return {};
+        });
+        if (!rs.ok) throw new Error(apiErrDetail(sj) || rs.statusText);
+        applySharePayload(sj);
+      } catch (e) {
+        flash(String(e.message || e), false);
+        if (ep) ep.textContent = '—';
+      }
     };
     tr.querySelector('.btn-edit').onclick = function () {
       document.getElementById('modalEditTitle').textContent = '编辑用户';
@@ -405,6 +609,25 @@
 
   if (tbody) {
     tbody.querySelectorAll('tr').forEach(bindRow);
+  }
+
+  var btnCopyVmess = document.getElementById('btnCopyVmess');
+  if (btnCopyVmess) {
+    btnCopyVmess.addEventListener('click', function () {
+      copyInputOrTextarea('txtVmess');
+    });
+  }
+  var btnCopyClash = document.getElementById('btnCopyClash');
+  if (btnCopyClash) {
+    btnCopyClash.addEventListener('click', function () {
+      copyInputOrTextarea('txtClash');
+    });
+  }
+  var btnCopyV2 = document.getElementById('btnCopyV2');
+  if (btnCopyV2) {
+    btnCopyV2.addEventListener('click', function () {
+      copyInputOrTextarea('txtV2ray');
+    });
   }
 
   async function refreshTable() {

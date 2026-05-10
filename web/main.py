@@ -18,6 +18,7 @@ from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 
 from traffic_poller import start_traffic_poller_thread
 from traffic_store import get_store
+from share_links import build_share_payload
 from v2ray_stats import enrich_clients_traffic
 from v2ray_config import (
     add_client,
@@ -145,6 +146,17 @@ def api_list_clients() -> JSONResponse:
             "traffic_month": get_store().current_month_label(),
         }
     )
+
+
+@app.get("/api/panel/clients/{index:int}/share")
+def api_client_share(index: int) -> JSONResponse:
+    cfg = _load_config_dict()
+    try:
+        return JSONResponse(content=build_share_payload(cfg, index))
+    except IndexError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.post("/api/panel/clients")

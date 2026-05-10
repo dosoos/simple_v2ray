@@ -195,8 +195,11 @@ def build_share_payload(config: dict[str, Any], index: int) -> dict[str, Any]:
     sm = inbound_stream_meta(inbound)
     net = sm["network"]
 
+    # 分享链接中的「备注 / 节点名」使用对外域名，不用面板里的用户备注（email）
+    node_label = host or "vmess"
+
     vmess_uri = build_vmess_uri(
-        remark=email or "vmess",
+        remark=node_label,
         uuid_str=uuid_str,
         host=host,
         port=pub_port,
@@ -207,7 +210,7 @@ def build_share_payload(config: dict[str, Any], index: int) -> dict[str, Any]:
         tls=tls,
     )
     clash_yaml = build_clash_vmess_yaml(
-        remark=email or "vmess",
+        remark=node_label,
         uuid_str=uuid_str,
         host=host,
         port=pub_port,
@@ -235,6 +238,7 @@ def build_share_payload(config: dict[str, Any], index: int) -> dict[str, Any]:
     return {
         "email": email,
         "uuid": uuid_str,
+        "share_node_label": node_label,
         "public_host": host,
         "public_port": pub_port,
         "public_tls": tls,

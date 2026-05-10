@@ -1,19 +1,40 @@
-vpc.basha.fun vpc.dosoos.com dmit.vpc.dosoos.com {
+ (vpc_handlers) {
 
-    @ws {
-        path /api
-        header Connection *pgrade
-        header Upgrade *ebsocket
+    @v2ws {
+        # 兼容 Upgrade/upgrade 等大小写差异：
+        # 这里用 *pgrade* / *ebsocket* 做模糊匹配，避免仅匹配 "Upgrade/websocket" 导致部分客户端握手不命中。
+        path /proxy
+        header Connection *pgrade*
+        header Upgrade *ebsocket*
     }
-    reverse_proxy @ws v2ray:58888
+    reverse_proxy @v2ws v2ray:58888
 
-    root * /usr/share/caddy
+    handle_path /static/* {
+        root * /srv/django/static
+        file_server
+    }
+    handle_path /media/* {
+        root * /srv/django/media
+        file_server
+    }
+    handle /api/* {
+        reverse_proxy web:8000
+    }
+    handle {
+        respond "VPC panel" 200
+    }
 
     log {
         format console
     }
-
-    file_server
-
 }
 
+# 本地调试：显式 http:// 前缀，避免自动跳转 https
+http://localhost http://127.0.0.1 {
+    import vpc_handlers
+}
+
+# 线上：域名站点（保持原有行为）
+{$HOST_DOMAIN} {
+    import vpc_handlers
+}

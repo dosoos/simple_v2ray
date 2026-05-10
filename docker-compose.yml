@@ -1,0 +1,73 @@
+## 扩展字段（仅用于 YAML anchor 复用），不能放在 services 下
+x-app-env: &app_env
+  HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
+  MASTER_URL: ${MASTER_URL:-}
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+  DEBUG: ${DEBUG:-0}
+
+services:
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment: *app_env
+    volumes:
+      - django_data:/data
+      - ./v2ray:/v2ray
+    depends_on:
+      - v2ray
+    networks:
+      - internal
+
+  v2ray:
+    image: v2fly/v2fly-core:latest
+    restart: unless-stopped
+    volumes:
+      - ./v2ray:/etc/v2ray
+    command: run -c /etc/v2ray/config.json
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - django_data:/srv/django:ro
+    depends_on:
+      - web
+      - v2ray
+    networks:
+      - internal
+
+  scheduler:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    command: ["/app/scheduler.sh"]
+    environment: *app_env
+    volumes:
+      - django_data:/data
+      - ./v2ray:/v2ray
+    depends_on:
+      - web
+      - v2ray
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  django_data:
+  caddy_data:
+  caddy_config:

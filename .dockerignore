@@ -1,0 +1,8 @@
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.git
+web/staticfiles
+web/db.sqlite3
+v2ray/log
+*.log

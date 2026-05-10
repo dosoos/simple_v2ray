@@ -28,161 +28,23 @@
       "settings": {
         "clients": [
           {
-            "id": "9AB3BDD3-7B64-4B7A-A626-6FFA026C8877",
+            "id": "00000000-0000-0000-0000-000000000001",
             "level": 0,
             "alterId": 0,
-            "email": "home-openwrt",
-            "createtime": "2021-11-08T12:03:58",
-            "updatetime": "2021-11-08T15:16:29"
-          },
-          {
-            "id": "CFFDA8B6-196B-439B-880B-7DBE27FA47CC",
-            "level": 0,
-            "alterId": 0,
-            "email": "zhaozhen",
-            "createtime": "2020-11-02T12:03:58",
-            "updatetime": "2020-11-02T12:03:58"
-          },
-          {
-            "id": "2CE0D080-D0FE-42E2-A926-B9943791B49A",
-            "level": 0,
-            "alterId": 64,
-            "email": "东东",
-            "createtime": "2021-11-08T12:03:58",
-            "updatetime": "2021-11-08T12:03:58"
-          },
-          {
-            "id": "C0D29DBB-67B7-48B0-B7BF-62FC09DB40A9",
-            "level": 0,
-            "alterId": 0,
-            "email": "iphonexs",
-            "createtime": "2021-11-08T15:29:33",
-            "updatetime": "2021-11-08T15:29:33"
-          },
-          {
-            "id": "CEAFE6BD-838B-438F-A65D-9984F66F569C",
-            "level": 0,
-            "alterId": 0,
-            "email": "Pixel3",
-            "createtime": "2021-11-08T15:44:56",
-            "updatetime": "2021-11-08T15:44:56"
-          },
-          {
-            "id": "A5347C7E-7C9E-45F8-A867-DDBD7700748E",
-            "level": 0,
-            "alterId": 0,
-            "email": "e5desktop",
-            "createtime": "2021-11-09T01:37:04",
-            "updatetime": "2021-11-09T01:37:04"
-          },
-          {
-            "id": "EF83FDC7-D6ED-4BC3-8A16-D61638949F21",
-            "level": 0,
-            "alterId": 0,
-            "email": "孙志帅",
-            "createtime": "2021-11-10T13:22:42",
-            "updatetime": "2021-11-10T13:22:42"
-          },
-          {
-            "id": "537AF3CF-AA7D-44BC-96F4-509C72DEF3EA",
-            "level": 0,
-            "alterId": 0,
-            "email": "MacBook Air m1",
-            "createtime": "2021-11-17T10:33:41",
-            "updatetime": "2021-11-17T10:33:41"
-          },
-          {
-            "id": "3646D44B-3A61-45A0-95DA-A3B04CA9B85E",
-            "level": 0,
-            "alterId": 0,
-            "email": "IPadmini5",
-            "createtime": "2022-01-08T15:00:51",
-            "updatetime": "2022-01-08T15:00:51"
-          },
-          {
-            "id": "03AA751F-6FBF-4C39-B5DD-99E1CD2497AA",
-            "level": 0,
-            "alterId": 0,
-            "email": "亮亮",
-            "createtime": "2022-12-01T08:15:22",
-            "updatetime": "2022-12-01T08:15:22"
-          },
-          {
-            "id": "B85C6676-7803-4661-90B5-CAA6E51AB763",
-            "level": 0,
-            "alterId": 0,
-            "email": "陈晓",
-            "createtime": "2022-12-01T08:28:01",
-            "updatetime": "2022-12-01T08:28:01"
-          },
-          {
-            "id": "B3090A01-02CB-41C9-BA36-C9F3F6BA7242",
-            "level": 0,
-            "alterId": 0,
-            "email": "e3desktop",
-            "createtime": "2022-12-05T15:14:14",
-            "updatetime": "2022-12-05T15:14:14"
-          },
-          {
-            "id": "AFDB7D09-5B22-4274-A05B-B0DB9DF63295",
-            "level": 0,
-            "alterId": 0,
-            "email": "淑玲",
-            "createtime": "2022-12-08T14:10:31",
-            "updatetime": "2022-12-08T14:10:31"
-          },
-          {
-            "id": "5497867F-95EE-4630-9719-BD1FAE442C72",
-            "level": 0,
-            "alterId": 0,
-            "email": "张骞",
-            "createtime": "2022-12-21T14:11:54",
-            "updatetime": "2022-12-21T14:11:54"
-          },
-          {
-            "id": "FD648E5D-EA9A-4329-B71C-B201A8653591",
-            "level": 0,
-            "alterId": 0,
-            "email": "Juanjiejia",
-            "createtime": "2023-01-07T09:28:15",
-            "updatetime": "2023-01-07T09:28:15"
-          },
-          {
-            "id": "7623C1D1-ABF8-48E5-B615-64210151F51F",
-            "level": 0,
-            "alterId": 0,
-            "email": "Dazhao",
-            "createtime": "2023-02-11T09:44:31",
-            "updatetime": "2023-02-11T09:44:31"
-          },
-          {
-            "id": "2298C424-CA1A-4B82-9DE2-74711B3D0707",
-            "level": 0,
-            "alterId": 0,
-            "email": "RaspberryPI2B",
-            "createtime": "2023-02-18T06:00:15",
-            "updatetime": "2023-02-18T06:00:15"
-          },
-          {
-            "id": "C3FFE892-D16A-4C53-98BA-47EDF4E10715",
-            "level": 0,
-            "alterId": 0,
-            "email": "test666",
-            "createtime": "2023-10-08T17:29:57",
-            "updatetime": "2023-10-08T17:29:57"
+            "email": "placeholder-disabled"
           }
         ]
       },
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "/api"
+          "path": "/proxy"
         }
       }
     },
     {
-      "listen": "127.0.0.1",
-      "port": 8080,
+      "listen": "0.0.0.0",
+      "port": 10085,
       "protocol": "dokodemo-door",
       "settings": {
         "address": "127.0.0.1"
@@ -195,19 +57,24 @@
       "tag": "direct",
       "protocol": "freedom",
       "settings": {}
+    },
+    {
+      "tag": "api",
+      "protocol": "freedom",
+      "settings": {}
     }
   ],
   "routing": {
+    "domainStrategy": "AsIs",
+    "strategy": "rules",
     "rules": [
       {
+        "type": "field",
         "inboundTag": [
           "api"
         ],
-        "outboundTag": "api",
-        "type": "field"
+        "outboundTag": "api"
       }
-    ],
-    "strategy": "rules",
-    "domainStrategy": "AsIs"
+    ]
   }
 }

@@ -1,2 +1,68 @@
+# —— 环境与密钥 ——
+.env
+.env.*
+!.env.example
+
+# —— Python ——
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+
+# —— Django ——
+*.sqlite3
+*.sqlite3-journal
+local_settings.py
+/static/
+/media/
+
+# —— gRPC / Docker 构建生成的桩代码（见 web/Dockerfile 中 protoc） ——
+web/v2ray_stats_command_pb2.py
+web/v2ray_stats_command_pb2_grpc.py
+
+# —— V2Ray ——
 v2ray/log/
-caddy/
+
+# —— Caddy：保留 Caddyfile；忽略本地证书与数据 ——
+caddy/data/
+caddy/config/
+
+# —— 日志与临时文件 ——
+*.log
+*.tmp
+*.temp
+.cache/
+
+# —— 操作系统 ——
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# —— 编辑器 / IDE ——
+.idea/
+*.swp
+*.swo
+*~

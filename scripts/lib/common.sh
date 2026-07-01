@@ -79,6 +79,7 @@ write_caddyfile() {
   hash="$(generate_bcrypt_hash "$plaintext_password")"
   domains_caddy="$(normalize_domains_for_caddy "$domains_csv")"
 
+  mkdir -p "$(dirname "$CADDYFILE")"
   umask 077
   cat >"$CADDYFILE" <<'EOF'
 (vpc_handlers) {

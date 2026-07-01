@@ -554,7 +554,7 @@
   function bindRow(tr) {
     tr.querySelector('.btn-detail').onclick = async function () {
       document.getElementById('detailEmail').textContent = tr.dataset.email || '—';
-      document.getElementById('detailUuid').textContent = tr.dataset.id || '—';
+      document.getElementById('detailUuid').textContent = (tr.dataset.id || '—').toUpperCase();
       var dt = document.getElementById('detailTraffic');
       var up = tr.dataset.trafficUp || '—';
       var down = tr.dataset.trafficDown || '—';

@@ -62,3 +62,9 @@ docker compose restart caddy
 - `v2ray/` — V2Ray 配置（`config.json` 运行时生成，不入库）
 
 更多细节见 `docs/architecture.md`。
+
+## 许可证
+
+本项目采用 [MIT](LICENSE) 协议开源。
+
+管理面板 UI 基于 [Sneat](https://github.com/themeselection/sneat-html-admin-template-free)（MIT），详见 `web/sneat-1.0.0/LICENSE.md`。

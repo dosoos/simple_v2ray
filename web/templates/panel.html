@@ -403,7 +403,20 @@
               <dt class="col-sm-3">备注</dt>
               <dd class="col-sm-9" id="detailEmail">—</dd>
               <dt class="col-sm-3">UUID</dt>
-              <dd class="col-sm-9 text-break font-monospace small" id="detailUuid">—</dd>
+              <dd class="col-sm-9">
+                <span class="d-inline-flex align-items-start gap-1 text-break font-monospace small">
+                  <span id="detailUuid">—</span>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-text-secondary p-0 border-0 flex-shrink-0 lh-1"
+                    id="btnCopyUuid"
+                    title="复制 UUID"
+                    aria-label="复制 UUID"
+                  >
+                    <i class="bx bx-copy"></i>
+                  </button>
+                </span>
+              </dd>
               <dt class="col-sm-3">流量</dt>
               <dd class="col-sm-9 small text-muted" id="detailTraffic">—</dd>
               <dt class="col-sm-3">对端</dt>
@@ -832,10 +845,12 @@
   });
   activatePanelView(parsePanelHash());
 
-  function copyInputOrTextarea(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    var t = el.value;
+  function copyText(text) {
+    var t = String(text || '').trim();
+    if (!t || t === '—') {
+      flash('无可复制内容', false);
+      return;
+    }
     navigator.clipboard.writeText(t).then(
       function () {
         flash('已复制到剪贴板', true, { timer: 1500 });
@@ -844,6 +859,12 @@
         flash('复制失败', false);
       }
     );
+  }
+
+  function copyInputOrTextarea(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    copyText(el.value);
   }
 
   function paintQr(canvasId, text, fallbackElId) {
@@ -992,6 +1013,14 @@
 
   if (tbody) {
     tbody.querySelectorAll('tr').forEach(bindRow);
+  }
+
+  var btnCopyUuid = document.getElementById('btnCopyUuid');
+  if (btnCopyUuid) {
+    btnCopyUuid.addEventListener('click', function () {
+      var el = document.getElementById('detailUuid');
+      copyText(el ? el.textContent : '');
+    });
   }
 
   var btnCopyVmess = document.getElementById('btnCopyVmess');

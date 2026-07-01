@@ -56,9 +56,13 @@ docker compose restart caddy
 - 按月流量统计（数据保存在 `v2ray/panel_traffic_monthly.json`）
 
 <p align="center">
-  <img src="docs/images/panel_users.png" alt="用户列表" width="280" />
-  <img src="docs/images/panel_stats.png" alt="流量统计" width="280" />
-  <img src="docs/images/panel_backup.png" alt="配置备份导入导出" width="280" />
+  <table>
+    <tr>
+      <td align="center"><img src="docs/images/panel_users.png" alt="用户列表" width="240" /></td>
+      <td align="center"><img src="docs/images/panel_stats.png" alt="流量统计" width="240" /></td>
+      <td align="center"><img src="docs/images/panel_backup.png" alt="配置备份导入导出" width="240" /></td>
+    </tr>
+  </table>
 </p>
 
 <p align="center">

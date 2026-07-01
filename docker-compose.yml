@@ -37,13 +37,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    entrypoint: ["/bin/sh", "/etc/caddy/docker-entrypoint.sh"]
-    environment:
-      HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
-      CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}
     volumes:
-      - ./caddy/docker-entrypoint.sh:/etc/caddy/docker-entrypoint.sh:ro
-      - ./caddy/admin.hash:/etc/caddy/admin.hash:ro
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config

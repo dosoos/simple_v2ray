@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
     <link rel="stylesheet" href="/assets/css/demo.css" />
     <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/apex-charts/apex-charts.css" />
     <script src="/assets/vendor/js/helpers.js"></script>
     <script src="/assets/js/config.js"></script>
     <style>
@@ -103,6 +104,12 @@
         padding-left: 0.5rem;
         padding-right: 0.5rem;
       }
+      .panel-chart-wrap {
+        min-height: 18rem;
+      }
+      .panel-chart-wrap .apexcharts-canvas {
+        margin: 0 auto;
+      }
     </style>
   </head>
   <body>
@@ -110,7 +117,7 @@
       <div class="layout-container">
         <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
           <div class="app-brand demo">
-            <a href="/panel/" class="app-brand-link">
+            <a href="#users" class="app-brand-link">
               <span class="app-brand-text demo menu-text fw-bolder ms-2">VPC Panel</span>
             </a>
             <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
@@ -119,10 +126,22 @@
           </div>
           <div class="menu-inner-shadow"></div>
           <ul class="menu-inner py-1">
-            <li class="menu-item active">
-              <a href="/panel/" class="menu-link">
+            <li class="menu-item active" data-view="users">
+              <a href="#users" class="menu-link panel-nav-link">
                 <i class="menu-icon tf-icons bx bx-user-circle"></i>
                 <div>代理用户</div>
+              </a>
+            </li>
+            <li class="menu-item" data-view="service">
+              <a href="#service" class="menu-link panel-nav-link">
+                <i class="menu-icon tf-icons bx bx-server"></i>
+                <div>服务管理</div>
+              </a>
+            </li>
+            <li class="menu-item" data-view="backup">
+              <a href="#backup" class="menu-link panel-nav-link">
+                <i class="menu-icon tf-icons bx bx-archive"></i>
+                <div>备份管理</div>
               </a>
             </li>
           </ul>
@@ -149,15 +168,6 @@
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                      <span class="dropdown-item-text small text-muted px-4 py-1">已登录</span>
-                    </li>
-                    <li>
-                      <button type="button" class="dropdown-item" id="btnRestartV2ray">
-                        <i class="bx bx-refresh me-2"></i>重启 V2Ray
-                      </button>
-                    </li>
-                    <li><hr class="dropdown-divider" /></li>
-                    <li>
                       <a class="dropdown-item" href="#" id="btnLogout"><i class="bx bx-power-off me-2"></i>退出登录</a>
                     </li>
                   </ul>
@@ -174,9 +184,10 @@
               <div class="alert alert-danger" role="alert">{{ load_error }}</div>
               {% endif %}
               {% if traffic_error %}
-              <div class="alert alert-warning py-2 small mb-3" role="alert">流量统计不可用：{{ traffic_error }}</div>
+              <div class="alert alert-warning py-2 small mb-3" role="alert" id="trafficErrorBanner">流量统计不可用：{{ traffic_error }}</div>
               {% endif %}
 
+              <div id="panelViewUsers">
               <div class="card mb-3 panel-table-card">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between gap-2">
                   <h5 class="mb-0 flex-shrink-1 text-truncate">用户列表</h5>
@@ -236,34 +247,104 @@
                 <div class="card-body"><p class="text-muted mb-0">暂无用户，请点击「新增用户」。</p></div>
                 {% endif %}
               </div>
+              </div>
 
-              <div class="card">
-                <div class="card-header d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2">
-                  <h5 class="mb-0">配置备份（完整 JSON）导入 / 导出</h5>
-                  <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center">
-                    <a href="/panel/api/export" download="config.json" class="btn btn-primary btn-sm">
-                      <i class="bx bx-download me-1"></i>导出完整 config.json
-                    </a>
-                    <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center flex-grow-1">
-                      <input type="file" id="fileImp" class="form-control form-control-sm" accept="application/json,.json" />
-                      <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="chkSyncImport" />
-                        <label class="form-check-label small" for="chkSyncImport">同步列表（未出现在导入文件中的本地用户将被删除）</label>
+              <div id="panelViewService" class="d-none">
+                <div class="row g-3 mb-3">
+                  <div class="col-sm-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <span class="d-block mb-1 text-muted">本月总流量</span>
+                        <h4 class="card-title mb-1" id="svcTotalAll">—</h4>
+                        <small class="text-muted" id="svcTrafficMonth">{{ traffic_month }}</small>
                       </div>
-                      <button type="button" class="btn btn-outline-secondary btn-sm" id="btnImp"><i class="bx bx-upload me-1"></i>导入备份 JSON</button>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <span class="d-block mb-1 text-muted">上行合计</span>
+                        <h4 class="card-title mb-0" id="svcTotalUp">—</h4>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <span class="d-block mb-1 text-muted">下行合计</span>
+                        <h4 class="card-title mb-0" id="svcTotalDown">—</h4>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div class="card-body py-2">
-                  <small class="text-muted"
-                    ><strong>导出</strong>为当前磁盘上的<strong>完整</strong> <code>config.json</code>。<strong>导入</strong>也请上传<strong>完整备份 JSON</strong>（可与导出文件一致）；服务端<strong>只解析其中 VMess 入站的 <code>clients</code></strong> 用于合并/同步，导入文件里的路由、出站、API、stats 等均<strong>忽略</strong>，不会覆盖本地其它配置。默认合并用户；勾选「同步列表」则以导入中的用户列表替换 VMess 用户数组。路径：<code>{{ config_path }}</code></small>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-lg-6">
+                    <div class="card h-100">
+                      <div class="card-header py-3">
+                        <h5 class="mb-0">用户流量占比</h5>
+                      </div>
+                      <div class="card-body">
+                        <div id="chartTrafficShare" class="panel-chart-wrap"></div>
+                        <p id="chartTrafficShareEmpty" class="text-muted text-center mb-0 d-none">暂无流量数据</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-6">
+                    <div class="card h-100">
+                      <div class="card-header py-3">
+                        <h5 class="mb-0">用户流量分布</h5>
+                      </div>
+                      <div class="card-body">
+                        <div id="chartTrafficAmount" class="panel-chart-wrap"></div>
+                        <p id="chartTrafficAmountEmpty" class="text-muted text-center mb-0 d-none">暂无流量数据</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="card-header py-3">
+                    <h5 class="mb-0">服务操作</h5>
+                  </div>
+                  <div class="card-body">
+                    <p class="text-muted mb-3">新增、编辑或删除用户后，需重启 V2Ray 才能使配置生效；重启期间代理连接会短暂中断。</p>
+                    <button type="button" class="btn btn-warning" id="btnRestartV2ray">
+                      <i class="bx bx-refresh me-1"></i>重启 V2Ray
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="panelViewBackup" class="d-none">
+                <div class="card">
+                  <div class="card-header d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2">
+                    <h5 class="mb-0">配置备份（完整 JSON）导入 / 导出</h5>
+                    <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center">
+                      <a href="/panel/api/export" download="config.json" class="btn btn-primary btn-sm">
+                        <i class="bx bx-download me-1"></i>导出完整 config.json
+                      </a>
+                      <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center flex-grow-1">
+                        <input type="file" id="fileImp" class="form-control form-control-sm" accept="application/json,.json" />
+                        <div class="form-check mb-0">
+                          <input class="form-check-input" type="checkbox" id="chkSyncImport" />
+                          <label class="form-check-label small" for="chkSyncImport">同步列表（未出现在导入文件中的本地用户将被删除）</label>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnImp"><i class="bx bx-upload me-1"></i>导入备份 JSON</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-body py-2">
+                    <small class="text-muted"
+                      ><strong>导出</strong>为当前磁盘上的<strong>完整</strong> <code>config.json</code>。<strong>导入</strong>也请上传<strong>完整备份 JSON</strong>（可与导出文件一致）；服务端<strong>只解析其中 VMess 入站的 <code>clients</code></strong> 用于合并/同步，导入文件里的路由、出站、API、stats 等均<strong>忽略</strong>，不会覆盖本地其它配置。默认合并用户；勾选「同步列表」则以导入中的用户列表替换 VMess 用户数组。路径：<code>{{ config_path }}</code></small>
+                  </div>
                 </div>
               </div>
             </div>
 
             <footer class="content-footer footer bg-footer-theme">
               <div class="container-xxl py-3">
-                <small class="text-muted">VPC Panel · VMess 用户</small>
+                <small class="text-muted">VPC Panel</small>
               </div>
             </footer>
             <div class="content-backdrop fade"></div>
@@ -413,9 +494,30 @@
     <script src="/assets/vendor/js/menu.js"></script>
     <script src="/assets/js/main.js"></script>
     <script src="/assets/vendor/libs/qrcode/qrcode.min.js"></script>
+    <script src="/assets/vendor/libs/apex-charts/apexcharts.js"></script>
     <script>
 (function () {
   const fetchOpts = { credentials: 'same-origin' };
+  const PANEL_VIEWS = { users: 'panelViewUsers', service: 'panelViewService', backup: 'panelViewBackup' };
+  const PANEL_TITLES = {
+    users: 'VPC 代理 · 用户管理',
+    service: 'VPC 代理 · 服务管理',
+    backup: 'VPC 代理 · 备份管理',
+  };
+  const CHART_COLORS = [
+    (typeof config !== 'undefined' && config.colors.primary) || '#696cff',
+    (typeof config !== 'undefined' && config.colors.success) || '#71dd37',
+    (typeof config !== 'undefined' && config.colors.info) || '#03c3ec',
+    (typeof config !== 'undefined' && config.colors.warning) || '#ffab00',
+    (typeof config !== 'undefined' && config.colors.danger) || '#ff3e1d',
+    (typeof config !== 'undefined' && config.colors.secondary) || '#8592a3',
+    '#8c57ff',
+    '#03d0bd',
+    '#ff6f61',
+    '#6c757d',
+  ];
+  var chartTrafficShareInst = null;
+  var chartTrafficAmountInst = null;
   const flashArea = document.getElementById('flashArea');
   const tbody = document.getElementById('tbody');
   const modalDetailEl = document.getElementById('modalDetail');
@@ -467,6 +569,222 @@
       msg +
       '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
   }
+
+  function formatBytesClient(n) {
+    n = Number(n) || 0;
+    if (n < 0) n = 0;
+    var units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+    var v = n;
+    var i = 0;
+    while (v >= 1024 && i < units.length - 1) {
+      v /= 1024;
+      i += 1;
+    }
+    if (i === 0) return String(Math.round(v)) + ' B';
+    return v.toFixed(2).replace(/\.?0+$/, '') + ' ' + units[i];
+  }
+
+  function destroyChart(inst) {
+    if (inst) {
+      try {
+        inst.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    return null;
+  }
+
+  function chartColors(n) {
+    var out = [];
+    for (var i = 0; i < n; i += 1) {
+      out.push(CHART_COLORS[i % CHART_COLORS.length]);
+    }
+    return out;
+  }
+
+  function renderServiceCharts(labels, series, total) {
+    var shareEl = document.getElementById('chartTrafficShare');
+    var amountEl = document.getElementById('chartTrafficAmount');
+    var shareEmpty = document.getElementById('chartTrafficShareEmpty');
+    var amountEmpty = document.getElementById('chartTrafficAmountEmpty');
+    chartTrafficShareInst = destroyChart(chartTrafficShareInst);
+    chartTrafficAmountInst = destroyChart(chartTrafficAmountInst);
+    if (shareEl) shareEl.innerHTML = '';
+    if (amountEl) amountEl.innerHTML = '';
+
+    if (!labels.length || total <= 0) {
+      if (shareEl) shareEl.classList.add('d-none');
+      if (amountEl) amountEl.classList.add('d-none');
+      if (shareEmpty) shareEmpty.classList.remove('d-none');
+      if (amountEmpty) amountEmpty.classList.remove('d-none');
+      return;
+    }
+
+    if (shareEl) shareEl.classList.remove('d-none');
+    if (amountEl) amountEl.classList.remove('d-none');
+    if (shareEmpty) shareEmpty.classList.add('d-none');
+    if (amountEmpty) amountEmpty.classList.add('d-none');
+
+    var colors = chartColors(labels.length);
+    var headingColor =
+      (typeof config !== 'undefined' && config.colors && config.colors.headingColor) || '#566a7f';
+
+    if (shareEl && typeof ApexCharts !== 'undefined') {
+      chartTrafficShareInst = new ApexCharts(shareEl, {
+        chart: { type: 'pie', height: 320, fontFamily: 'Public Sans' },
+        labels: labels,
+        series: series,
+        colors: colors,
+        legend: { position: 'bottom', fontSize: '13px' },
+        dataLabels: {
+          enabled: true,
+          formatter: function (val) {
+            return (Math.round(val * 10) / 10) + '%';
+          },
+        },
+        tooltip: {
+          y: {
+            formatter: function (val) {
+              var pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+              return formatBytesClient(val) + ' (' + pct + '%)';
+            },
+          },
+        },
+        stroke: { width: 2 },
+      });
+      chartTrafficShareInst.render();
+    }
+
+    if (amountEl && typeof ApexCharts !== 'undefined') {
+      chartTrafficAmountInst = new ApexCharts(amountEl, {
+        chart: { type: 'donut', height: 320, fontFamily: 'Public Sans' },
+        labels: labels,
+        series: series,
+        colors: colors,
+        legend: { position: 'bottom', fontSize: '13px' },
+        dataLabels: {
+          enabled: true,
+          formatter: function (_val, opts) {
+            return formatBytesClient(series[opts.seriesIndex]);
+          },
+        },
+        tooltip: {
+          y: {
+            formatter: function (val) {
+              return formatBytesClient(val);
+            },
+          },
+        },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: '62%',
+              labels: {
+                show: true,
+                total: {
+                  show: true,
+                  label: '合计',
+                  color: headingColor,
+                  formatter: function () {
+                    return formatBytesClient(total);
+                  },
+                },
+              },
+            },
+          },
+        },
+        stroke: { width: 2 },
+      });
+      chartTrafficAmountInst.render();
+    }
+  }
+
+  async function loadServiceDashboard() {
+    var totalAllEl = document.getElementById('svcTotalAll');
+    var totalUpEl = document.getElementById('svcTotalUp');
+    var totalDownEl = document.getElementById('svcTotalDown');
+    var monthEl = document.getElementById('svcTrafficMonth');
+    try {
+      var r = await fetch('/panel/api/clients', fetchOpts);
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      if (!r.ok) throw new Error(apiErrDetail(j) || r.statusText);
+
+      var clients = j.clients || [];
+      var totalUp = 0;
+      var totalDown = 0;
+      var labels = [];
+      var series = [];
+      clients.forEach(function (c) {
+        var up = Number(c.bytes_up) || 0;
+        var down = Number(c.bytes_down) || 0;
+        totalUp += up;
+        totalDown += down;
+        var sum = up + down;
+        if (sum > 0) {
+          labels.push(c.email || '—');
+          series.push(sum);
+        }
+      });
+      var total = totalUp + totalDown;
+
+      if (totalAllEl) totalAllEl.textContent = formatBytesClient(total);
+      if (totalUpEl) totalUpEl.textContent = formatBytesClient(totalUp);
+      if (totalDownEl) totalDownEl.textContent = formatBytesClient(totalDown);
+      if (monthEl && j.traffic_month) monthEl.textContent = j.traffic_month;
+
+      var banner = document.getElementById('trafficErrorBanner');
+      if (banner) {
+        if (j.traffic_error) {
+          banner.textContent = '流量统计不可用：' + j.traffic_error;
+          banner.classList.remove('d-none');
+        } else {
+          banner.classList.add('d-none');
+        }
+      }
+
+      renderServiceCharts(labels, series, total);
+    } catch (e) {
+      flash(String(e.message || e), false);
+    }
+  }
+
+  function parsePanelHash() {
+    var h = (location.hash || '').replace(/^#\/?/, '').toLowerCase();
+    if (h === 'service' || h === 'backup') return h;
+    return 'users';
+  }
+
+  function activatePanelView(view) {
+    if (!PANEL_VIEWS[view]) view = 'users';
+    Object.keys(PANEL_VIEWS).forEach(function (key) {
+      var el = document.getElementById(PANEL_VIEWS[key]);
+      if (el) el.classList.toggle('d-none', key !== view);
+      var item = document.querySelector('.menu-item[data-view="' + key + '"]');
+      if (item) item.classList.toggle('active', key === view);
+    });
+    document.title = PANEL_TITLES[view] || PANEL_TITLES.users;
+    if (view === 'service') loadServiceDashboard();
+  }
+
+  document.querySelectorAll('.panel-nav-link').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var item = link.closest('.menu-item');
+      var view = item && item.dataset.view ? item.dataset.view : 'users';
+      if (location.hash.replace(/^#\/?/, '') !== view) {
+        location.hash = view;
+      } else {
+        activatePanelView(view);
+      }
+    });
+  });
+  window.addEventListener('hashchange', function () {
+    activatePanelView(parsePanelHash());
+  });
+  activatePanelView(parsePanelHash());
 
   function copyInputOrTextarea(id) {
     var el = document.getElementById(id);
@@ -748,28 +1066,31 @@
     }
   };
 
-  document.getElementById('btnImp').onclick = async function () {
-    var f = document.getElementById('fileImp').files[0];
-    if (!f) {
-      flash('请选择 JSON 文件', false);
-      return;
-    }
-    var fd = new FormData();
-    fd.append('file', f);
-    fd.append('sync', document.getElementById('chkSyncImport').checked ? '1' : '0');
-    try {
-      var r = await fetch('/panel/api/import', { ...fetchOpts, method: 'POST', body: fd });
-      var j = await r.json();
-      if (!r.ok) throw new Error(j.detail || r.statusText);
-      flash(
-        j.mode === 'sync_clients' ? '已按导入文件同步用户列表（其余配置未改）' : '已合并导入用户（同名覆盖 UUID；其余配置未改）',
-        true
-      );
-      await refreshTable();
-    } catch (e) {
-      flash(String(e), false);
-    }
-  };
+  var btnImp = document.getElementById('btnImp');
+  if (btnImp) {
+    btnImp.onclick = async function () {
+      var f = document.getElementById('fileImp').files[0];
+      if (!f) {
+        flash('请选择 JSON 文件', false);
+        return;
+      }
+      var fd = new FormData();
+      fd.append('file', f);
+      fd.append('sync', document.getElementById('chkSyncImport').checked ? '1' : '0');
+      try {
+        var r = await fetch('/panel/api/import', { ...fetchOpts, method: 'POST', body: fd });
+        var j = await r.json();
+        if (!r.ok) throw new Error(j.detail || r.statusText);
+        flash(
+          j.mode === 'sync_clients' ? '已按导入文件同步用户列表（其余配置未改）' : '已合并导入用户（同名覆盖 UUID；其余配置未改）',
+          true
+        );
+        if (tbody) await refreshTable();
+      } catch (e) {
+        flash(String(e), false);
+      }
+    };
+  }
 })();
     </script>
   </body>

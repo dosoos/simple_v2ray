@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/assets/css/demo.css" />
     <link rel="stylesheet" href="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
     <link rel="stylesheet" href="/assets/vendor/libs/apex-charts/apex-charts.css" />
+    <link rel="stylesheet" href="/assets/vendor/libs/sweetalert2/sweetalert2.min.css" />
     <script src="/assets/vendor/js/helpers.js"></script>
     <script src="/assets/js/config.js"></script>
     <style>
@@ -178,7 +179,6 @@
 
           <div class="content-wrapper">
             <div class="container-xxl flex-grow-1 container-p-y">
-              <div id="flashArea"></div>
 
               {% if load_error %}
               <div class="alert alert-danger" role="alert">{{ load_error }}</div>
@@ -527,6 +527,7 @@
     <script src="/assets/js/main.js"></script>
     <script src="/assets/vendor/libs/qrcode/qrcode.min.js"></script>
     <script src="/assets/vendor/libs/apex-charts/apexcharts.js"></script>
+    <script src="/assets/vendor/libs/sweetalert2/sweetalert2.min.js"></script>
     <script>
 (function () {
   const fetchOpts = { credentials: 'same-origin' };
@@ -550,7 +551,7 @@
   ];
   var chartTrafficShareInst = null;
   var chartTrafficAmountInst = null;
-  const flashArea = document.getElementById('flashArea');
+  var panelToast = null;
   const tbody = document.getElementById('tbody');
   const modalDetailEl = document.getElementById('modalDetail');
   const modalEditEl = document.getElementById('modalEdit');
@@ -594,12 +595,31 @@
     });
   }
 
-  function flash(msg, ok) {
-    if (!flashArea) return;
-    flashArea.innerHTML =
-      '<div class="alert alert-' + (ok ? 'success' : 'danger') + ' alert-dismissible" role="alert">' +
-      msg +
-      '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+  function flash(msg, ok, opts) {
+    opts = opts || {};
+    if (typeof Swal === 'undefined') {
+      window.alert(msg);
+      return;
+    }
+    if (!panelToast) {
+      panelToast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timerProgressBar: true,
+        didOpen: function (toast) {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        },
+      });
+    }
+    var icon = opts.icon;
+    if (!icon) icon = ok ? 'success' : 'error';
+    panelToast.fire({
+      icon: icon,
+      title: msg,
+      timer: opts.timer != null ? opts.timer : ok ? 4000 : 5500,
+    });
   }
 
   function formatBytesClient(n) {
@@ -968,7 +988,7 @@
         const r = await fetch('/panel/api/clients/' + tr.dataset.index, { ...fetchOpts, method: 'DELETE' });
         const j = await r.json().catch(function () { return {}; });
         if (!r.ok) throw new Error(j.detail || r.statusText);
-        flash('已删除。请按需重启 v2ray。', true);
+        flash('已删除，请前往「服务管理」重启 V2Ray 使配置生效', true, { icon: 'warning', timer: 5000 });
         await refreshTable();
       } catch (e) {
         flash(String(e), false);
@@ -1090,7 +1110,14 @@
       }
       var j = await r.json().catch(function () { return {}; });
       if (!r.ok) throw new Error(j.detail || r.statusText);
-      flash('已保存。请按需重启 v2ray。', true);
+      var isNew = idx === '';
+      flash(
+        isNew
+          ? '用户已添加，请前往「服务管理」重启 V2Ray 使配置生效'
+          : '用户已保存，请前往「服务管理」重启 V2Ray 使配置生效',
+        true,
+        { icon: 'warning', timer: 5000 }
+      );
       modalEdit.hide();
       await refreshTable();
     } catch (e) {
@@ -1114,8 +1141,10 @@
         var j = await r.json();
         if (!r.ok) throw new Error(j.detail || r.statusText);
         flash(
-          j.mode === 'sync_clients' ? '已按导入文件同步用户列表（其余配置未改）' : '已合并导入用户（同名覆盖 UUID；其余配置未改）',
-          true
+          (j.mode === 'sync_clients' ? '已同步用户列表' : '已合并导入用户') +
+            '，请前往「服务管理」重启 V2Ray 使配置生效',
+          true,
+          { icon: 'warning', timer: 5000 }
         );
         if (tbody) await refreshTable();
       } catch (e) {

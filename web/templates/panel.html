@@ -111,36 +111,10 @@
       .panel-chart-wrap .apexcharts-canvas {
         margin: 0 auto;
       }
-      /* SweetAlert2 右上角弹窗：高于 Sneat 顶栏，并下移避免与头像重叠 */
+      /* SweetAlert2：仅提高层级并下移，不覆盖 popup/icon 默认样式（避免动画错位） */
       .swal2-container {
         z-index: 1200 !important;
-      }
-      .swal2-container.swal2-top-end,
-      .swal2-container.swal2-top-right {
-        top: 4.75rem !important;
-        right: 1.25rem !important;
-        padding: 0 !important;
-      }
-      .swal2-container.swal2-top-end .swal2-popup,
-      .swal2-container.swal2-top-right .swal2-popup {
-        margin: 0 !important;
-        width: auto;
-        min-width: 20em;
-        max-width: 32em;
-        padding: 1.25em 1.6em;
-        font-size: 1rem;
-      }
-      .swal2-container.swal2-top-end .swal2-title,
-      .swal2-container.swal2-top-right .swal2-title {
-        font-size: 1.125rem;
-        font-weight: 500;
-        margin: 0.25em 0 0;
-      }
-      .swal2-container.swal2-top-end .swal2-icon,
-      .swal2-container.swal2-top-right .swal2-icon {
-        width: 3.5em;
-        height: 3.5em;
-        margin: 0 0.75em 0 0;
+        --swal2-container-padding: 4.75rem 0.625em 0.625em;
       }
     </style>
   </head>
@@ -639,11 +613,6 @@
       title: msg,
       showConfirmButton: false,
       timer: opts.timer != null ? opts.timer : ok ? 2000 : 4000,
-      backdrop: false,
-      didOpen: function (popup) {
-        popup.addEventListener('mouseenter', Swal.stopTimer);
-        popup.addEventListener('mouseleave', Swal.resumeTimer);
-      },
     });
   }
 

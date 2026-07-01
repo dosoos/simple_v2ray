@@ -2,6 +2,36 @@
 
 Caddy 负责 HTTPS 与反代，V2Ray 提供 VMess，FastAPI 面板管理用户（无数据库，直接读写 `v2ray/config.json`）。
 
+## 原理图
+
+```mermaid
+flowchart LR
+  subgraph clients [客户端]
+    VPN[VMess 客户端]
+    Admin[浏览器管理页]
+  end
+
+  subgraph vps [VPS / Docker]
+    Caddy[Caddy<br/>:80 / :443]
+    V2Ray[V2Ray<br/>VMess + WS]
+    Panel[FastAPI 面板]
+    Config[(v2ray/config.json)]
+  end
+
+  VPN -->|HTTPS / WSS<br/>/api| Caddy
+  Admin -->|HTTPS<br/>/panel /assets<br/>Basic Auth| Caddy
+
+  Caddy -->|反代 WebSocket| V2Ray
+  Caddy -->|反代 HTTP| Panel
+
+  Panel <-->|读写| Config
+  V2Ray <-->|加载| Config
+```
+
+- **代理流量**：客户端经 Caddy 的 `/api`（WebSocket）连到 V2Ray。
+- **管理面板**：`/panel` 与静态资源 `/assets` 由 Caddy Basic Auth 保护，再反代到面板。
+- **配置存储**：面板与 V2Ray 共用 `v2ray/` 挂载目录，无数据库。
+
 ## 快速开始
 
 准备工作: 需要将域名解析到当前 VPS IP，以便 Caddy 可以正常获取 HTTPS 证书。
@@ -31,4 +61,4 @@ docker compose restart caddy
 - `caddy/` — Caddy 配置（`Caddyfile` 由 `scripts/init` 生成）
 - `v2ray/` — V2Ray 配置（`config.json` 运行时生成，不入库）
 
-详细架构见 `docs/architecture.md`。
+更多细节见 `docs/architecture.md`。

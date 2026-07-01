@@ -169,7 +169,6 @@ def panel_ui(request: Request) -> HTMLResponse:
             "load_error": load_error,
             "traffic_error": traffic_error,
             "traffic_month": get_store().current_month_label(),
-            "admin_user": os.environ.get("CADDY_ADMIN_USER", "admin"),
         },
     )
 
@@ -189,10 +188,10 @@ def api_list_clients() -> JSONResponse:
 
 
 @app.get("/panel/api/clients/{index:int}/share")
-def api_client_share(index: int) -> JSONResponse:
+def api_client_share(index: int, host: str = "") -> JSONResponse:
     cfg = _load_config_dict()
     try:
-        return JSONResponse(content=build_share_payload(cfg, index))
+        return JSONResponse(content=build_share_payload(cfg, index, host or None))
     except IndexError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:

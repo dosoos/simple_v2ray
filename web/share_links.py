@@ -28,11 +28,11 @@ def _primary_connect_host(raw: str) -> str:
     return first if first else "localhost"
 
 
-def public_endpoint() -> tuple[str, int, bool]:
-    """用户客户端应连接的对端地址（通常为 Caddy 首个域名与 443 TLS）。"""
+def public_endpoint(public_host: str | None = None) -> tuple[str, int, bool]:
+    """用户客户端应连接的对端地址；优先使用调用方传入的当前访问域名。"""
     raw = (
-        os.environ.get("PUBLIC_PROXY_HOST", "").strip()
-        or os.environ.get("HOST_DOMAIN", "").strip()
+        (public_host or "").strip()
+        or os.environ.get("PUBLIC_PROXY_HOST", "").strip()
         or ""
     )
     host = _primary_connect_host(raw) if raw else "localhost"
@@ -187,7 +187,9 @@ def build_v2ray_outbound_json(
     return json.dumps(outbound, ensure_ascii=False, indent=2) + "\n"
 
 
-def build_share_payload(config: dict[str, Any], index: int) -> dict[str, Any]:
+def build_share_payload(
+    config: dict[str, Any], index: int, public_host: str | None = None
+) -> dict[str, Any]:
     clients = list_clients(config)
     if index < 0 or index >= len(clients):
         raise IndexError("客户端索引无效")
@@ -203,7 +205,7 @@ def build_share_payload(config: dict[str, Any], index: int) -> dict[str, Any]:
     uuid_str = str(raw.get("id", ""))
     alter_id = int(raw.get("alterId", 0) or 0)
 
-    host, pub_port, tls = public_endpoint()
+    host, pub_port, tls = public_endpoint(public_host)
     sm = inbound_stream_meta(inbound)
     net = sm["network"]
 
@@ -245,7 +247,7 @@ def build_share_payload(config: dict[str, Any], index: int) -> dict[str, Any]:
 
     hint: str | None = None
     if host in ("localhost", "127.0.0.1"):
-        hint = "当前对外地址为 localhost，请在服务器上设置 PUBLIC_PROXY_HOST 或 HOST_DOMAIN 为实际域名后再分享给用户。"
+        hint = "当前对外地址为 localhost，请运行 ./scripts/init 配置实际域名后再分享给用户。"
 
     return {
         "email": email,

@@ -1,10 +1,3 @@
-## 扩展字段（仅用于 YAML anchor 复用），不能放在 services 下
-x-app-env: &app_env
-  HOST_DOMAIN: ${HOST_DOMAIN:-localhost}
-  V2RAY_CONFIG_PATH: /v2ray/config.json
-  # 与 Caddy Basic Auth 用户名一致（面板右上角展示）
-  CADDY_ADMIN_USER: ${CADDY_ADMIN_USER:-admin}
-
 services:
 
   panel:
@@ -12,8 +5,8 @@ services:
       context: ./web
       dockerfile: Dockerfile
     restart: unless-stopped
-    environment: *app_env
     volumes:
+      # 配置文件, 可以编辑租户信息
       - ./v2ray:/v2ray
       # 供面板内「重启 V2Ray」调用 docker（等同宿主机执行 docker restart，请确保仅信任可登入面板的用户）
       - /var/run/docker.sock:/var/run/docker.sock

@@ -9,7 +9,7 @@ Caddy 负责 HTTPS 与反代，V2Ray 提供 VMess，FastAPI 面板管理用户�
 1. 安装 Docker：`curl https://get.docker.com | sudo bash - && sudo usermod -aG docker $USER`
 2. 初始化配置：`chmod +x scripts/init && ./scripts/init`
 3. 启动服务：`docker compose up -d --build`
-4. 打开管理页：`https://<HOST_DOMAIN>/panel/`
+4. 打开管理页：`https://<你的域名>/panel/`（本地：`http://127.0.0.1/panel/`）
 
 ### 修改管理密码
 

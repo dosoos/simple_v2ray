@@ -2,7 +2,6 @@
 # 供 init / passwd 共用的配置生成逻辑
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-ENV_FILE="${ROOT}/.env"
 CADDYFILE="${ROOT}/caddy/Caddyfile"
 
 normalize_domains_csv() {
@@ -41,25 +40,34 @@ ensure_docker() {
   fi
 }
 
-read_env_value() {
-  local key="$1"
-  if [[ ! -f "$ENV_FILE" ]]; then
+read_caddyfile_domains() {
+  if [[ ! -f "$CADDYFILE" ]]; then
     return 1
   fi
-  grep -E "^${key}=" "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '\r'
+  local line sites
+  while IFS= read -r line; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ "$line" == *"{" ]] || continue
+    [[ "$line" == "("* ]] && continue
+    [[ "$line" == http://* || "$line" == https://* ]] && continue
+    sites="${line%{*}"
+    sites="$(echo "$sites" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/, */,/g')"
+    echo "$sites"
+    return 0
+  done <"$CADDYFILE"
+  echo "localhost"
 }
 
-write_env() {
-  local domains_csv="$1"
-  local admin_user="${2:-admin}"
-  local normalized
-  normalized="$(normalize_domains_csv "$domains_csv")"
-
-  umask 077
-  cat >"$ENV_FILE" <<EOF
-HOST_DOMAIN=${normalized}
-CADDY_ADMIN_USER=${admin_user}
-EOF
+read_caddyfile_admin_user() {
+  if [[ ! -f "$CADDYFILE" ]]; then
+    echo "admin"
+    return 0
+  fi
+  awk '
+    /basic_auth \{|basicauth \{/ { in_auth=1; next }
+    in_auth && /^[[:space:]]*\}/ { exit }
+    in_auth && NF>=2 { print $1; exit }
+  ' "$CADDYFILE"
 }
 
 write_caddyfile() {
@@ -175,7 +183,6 @@ print_overview() {
 管理员账号: ${admin_user}
 管理员密码: ${admin_password}
 管理地址:   ${panel_url}
-.env:       ${ENV_FILE}
 Caddyfile:  ${CADDYFILE}
 
 下一步:

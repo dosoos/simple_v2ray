@@ -12,7 +12,7 @@ usage() {
   -d  站点域名，逗号分隔（例: example.com,www.example.com）
   -p  管理页 Basic Auth 密码
 
-不带参数时进入交互式配置，完成后写入 .env 与 caddy/Caddyfile。
+不带参数时进入交互式配置，完成后写入 caddy/Caddyfile。
 EOF
 }
 
@@ -54,6 +54,5 @@ if [[ -z "$PASSWORD" ]]; then
   prompt_password
 fi
 
-write_env "$DOMAINS" "$ADMIN_USER"
 write_caddyfile "$DOMAINS" "$ADMIN_USER" "$PASSWORD"
 print_overview "$DOMAINS" "$ADMIN_USER" "$PASSWORD"

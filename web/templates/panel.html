@@ -317,26 +317,58 @@
               </div>
 
               <div id="panelViewBackup" class="d-none">
-                <div class="card">
-                  <div class="card-header d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-between gap-2">
-                    <h5 class="mb-0">配置备份（完整 JSON）导入 / 导出</h5>
-                    <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center">
-                      <a href="/panel/api/export" download="config.json" class="btn btn-primary btn-sm">
-                        <i class="bx bx-download me-1"></i>导出完整 config.json
-                      </a>
-                      <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center flex-grow-1">
-                        <input type="file" id="fileImp" class="form-control form-control-sm" accept="application/json,.json" />
-                        <div class="form-check mb-0">
-                          <input class="form-check-input" type="checkbox" id="chkSyncImport" />
-                          <label class="form-check-label small" for="chkSyncImport">同步列表（未出现在导入文件中的本地用户将被删除）</label>
+                <div class="mb-4">
+                  <h4 class="mb-2">配置备份</h4>
+                  <p class="text-muted mb-2">
+                    在此导出或导入 V2Ray 的 <code>config.json</code>。导出为磁盘上的<strong>完整配置</strong>；导入时也请上传完整 JSON，但服务端<strong>仅处理其中 VMess 入站的用户列表（<code>clients</code>）</strong>，路由、出站、API、stats 等字段不会写入本地。
+                  </p>
+                  <p class="text-muted small mb-0">
+                    默认导入为<strong>合并用户</strong>（同名覆盖 UUID）；勾选「同步列表」则以导入文件中的用户列表<strong>替换</strong>本地 VMess 用户。修改配置后请前往「服务管理」重启 V2Ray 使其生效。
+                  </p>
+                </div>
+                <div class="row g-4">
+                  <div class="col-lg-6">
+                    <div class="card h-100">
+                      <div class="card-header py-3">
+                        <h5 class="mb-0">导出配置</h5>
+                      </div>
+                      <div class="card-body d-flex flex-column gap-3">
+                        <p class="text-muted mb-0">
+                          下载当前磁盘上的<strong>完整</strong> <code>config.json</code>，可作为备份保存。
+                        </p>
+                        <p class="text-muted small mb-0">路径：<code>{{ config_path }}</code></p>
+                        <div class="mt-auto pt-2">
+                          <a href="/panel/api/export" download="config.json" class="btn btn-primary">
+                            <i class="bx bx-download me-1"></i>导出 config.json
+                          </a>
                         </div>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnImp"><i class="bx bx-upload me-1"></i>导入备份 JSON</button>
                       </div>
                     </div>
                   </div>
-                  <div class="card-body py-2">
-                    <small class="text-muted"
-                      ><strong>导出</strong>为当前磁盘上的<strong>完整</strong> <code>config.json</code>。<strong>导入</strong>也请上传<strong>完整备份 JSON</strong>（可与导出文件一致）；服务端<strong>只解析其中 VMess 入站的 <code>clients</code></strong> 用于合并/同步，导入文件里的路由、出站、API、stats 等均<strong>忽略</strong>，不会覆盖本地其它配置。默认合并用户；勾选「同步列表」则以导入中的用户列表替换 VMess 用户数组。路径：<code>{{ config_path }}</code></small>
+                  <div class="col-lg-6">
+                    <div class="card h-100">
+                      <div class="card-header py-3">
+                        <h5 class="mb-0">导入配置</h5>
+                      </div>
+                      <div class="card-body d-flex flex-column gap-3">
+                        <p class="text-muted mb-0">
+                          上传<strong>完整备份 JSON</strong>。服务端<strong>只解析其中 VMess 入站的 <code>clients</code></strong>，路由、出站、API、stats 等均<strong>忽略</strong>，不会覆盖本地其它配置。
+                        </p>
+                        <div>
+                          <label class="form-label" for="fileImp">选择备份文件</label>
+                          <input type="file" id="fileImp" class="form-control" accept="application/json,.json" />
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="chkSyncImport" />
+                          <label class="form-check-label" for="chkSyncImport">同步列表（未出现在导入文件中的本地用户将被删除）</label>
+                        </div>
+                        <div class="pt-1">
+                          <button type="button" class="btn btn-primary" id="btnImp">
+                            <i class="bx bx-upload me-1"></i>导入备份
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

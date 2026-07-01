@@ -111,6 +111,37 @@
       .panel-chart-wrap .apexcharts-canvas {
         margin: 0 auto;
       }
+      /* SweetAlert2 右上角弹窗：高于 Sneat 顶栏，并下移避免与头像重叠 */
+      .swal2-container {
+        z-index: 1200 !important;
+      }
+      .swal2-container.swal2-top-end,
+      .swal2-container.swal2-top-right {
+        top: 4.75rem !important;
+        right: 1.25rem !important;
+        padding: 0 !important;
+      }
+      .swal2-container.swal2-top-end .swal2-popup,
+      .swal2-container.swal2-top-right .swal2-popup {
+        margin: 0 !important;
+        width: auto;
+        min-width: 20em;
+        max-width: 32em;
+        padding: 1.25em 1.6em;
+        font-size: 1rem;
+      }
+      .swal2-container.swal2-top-end .swal2-title,
+      .swal2-container.swal2-top-right .swal2-title {
+        font-size: 1.125rem;
+        font-weight: 500;
+        margin: 0.25em 0 0;
+      }
+      .swal2-container.swal2-top-end .swal2-icon,
+      .swal2-container.swal2-top-right .swal2-icon {
+        width: 3.5em;
+        height: 3.5em;
+        margin: 0 0.75em 0 0;
+      }
     </style>
   </head>
   <body>
@@ -551,7 +582,6 @@
   ];
   var chartTrafficShareInst = null;
   var chartTrafficAmountInst = null;
-  var panelToast = null;
   const tbody = document.getElementById('tbody');
   const modalDetailEl = document.getElementById('modalDetail');
   const modalEditEl = document.getElementById('modalEdit');
@@ -601,24 +631,19 @@
       window.alert(msg);
       return;
     }
-    if (!panelToast) {
-      panelToast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timerProgressBar: true,
-        didOpen: function (toast) {
-          toast.addEventListener('mouseenter', Swal.stopTimer);
-          toast.addEventListener('mouseleave', Swal.resumeTimer);
-        },
-      });
-    }
     var icon = opts.icon;
     if (!icon) icon = ok ? 'success' : 'error';
-    panelToast.fire({
+    Swal.fire({
+      position: 'top-end',
       icon: icon,
       title: msg,
-      timer: opts.timer != null ? opts.timer : ok ? 4000 : 5500,
+      showConfirmButton: false,
+      timer: opts.timer != null ? opts.timer : ok ? 2000 : 4000,
+      backdrop: false,
+      didOpen: function (popup) {
+        popup.addEventListener('mouseenter', Swal.stopTimer);
+        popup.addEventListener('mouseleave', Swal.resumeTimer);
+      },
     });
   }
 
@@ -844,7 +869,7 @@
     var t = el.value;
     navigator.clipboard.writeText(t).then(
       function () {
-        flash('已复制到剪贴板', true);
+        flash('已复制到剪贴板', true, { timer: 1500 });
       },
       function () {
         flash('复制失败', false);
@@ -988,7 +1013,7 @@
         const r = await fetch('/panel/api/clients/' + tr.dataset.index, { ...fetchOpts, method: 'DELETE' });
         const j = await r.json().catch(function () { return {}; });
         if (!r.ok) throw new Error(j.detail || r.statusText);
-        flash('已删除，请前往「服务管理」重启 V2Ray 使配置生效', true, { icon: 'warning', timer: 5000 });
+        flash('已删除，请前往「服务管理」重启 V2Ray 使配置生效', true, { timer: 4000 });
         await refreshTable();
       } catch (e) {
         flash(String(e), false);
@@ -1116,7 +1141,7 @@
           ? '用户已添加，请前往「服务管理」重启 V2Ray 使配置生效'
           : '用户已保存，请前往「服务管理」重启 V2Ray 使配置生效',
         true,
-        { icon: 'warning', timer: 5000 }
+        { timer: 4000 }
       );
       modalEdit.hide();
       await refreshTable();
@@ -1144,7 +1169,7 @@
           (j.mode === 'sync_clients' ? '已同步用户列表' : '已合并导入用户') +
             '，请前往「服务管理」重启 V2Ray 使配置生效',
           true,
-          { icon: 'warning', timer: 5000 }
+          { timer: 4000 }
         );
         if (tbody) await refreshTable();
       } catch (e) {

@@ -11,12 +11,6 @@ Caddy 负责 HTTPS 与反代，V2Ray 提供 VMess，FastAPI 面板管理用户�
 3. 启动服务：`docker compose up -d --build`
 4. 打开管理页：`https://<HOST_DOMAIN>/panel/`
 
-非交互式初始化示例：
-
-```bash
-./scripts/init -d 'example.com,www.example.com' -p '你的强密码'
-```
-
 ### 修改管理密码
 
 ```bash

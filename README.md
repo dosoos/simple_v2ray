@@ -55,6 +55,16 @@ docker compose restart caddy
 - 导入时仅合并 VMess 用户列表，其它字段忽略
 - 按月流量统计（数据保存在 `v2ray/panel_traffic_monthly.json`）
 
+<p align="center">
+  <img src="docs/images/panel_users.png" alt="用户列表" width="280" />
+  <img src="docs/images/panel_stats.png" alt="流量统计" width="280" />
+  <img src="docs/images/panel_backup.png" alt="配置备份导入导出" width="280" />
+</p>
+
+<p align="center">
+  <sub>用户列表 · 流量统计 · 配置备份</sub>
+</p>
+
 ## 目录结构
 
 - `web/` — FastAPI 面板

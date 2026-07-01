@@ -27,7 +27,7 @@ primary_domain() {
 
 generate_bcrypt_hash() {
   ensure_docker
-  docker run --rm caddy:alpine caddy hash-password --plaintext "$1"
+  docker run --rm caddy:alpine caddy hash-password --plaintext "$1" | tr -d '\r\n'
 }
 
 ensure_docker() {
@@ -39,10 +39,6 @@ ensure_docker() {
     echo "错误: Docker 守护进程未运行，请先启动 Docker。" >&2
     exit 1
   fi
-}
-
-escape_dollar_for_caddy() {
-  echo "$1" | sed 's/\$/$$/g'
 }
 
 read_env_value() {
@@ -71,13 +67,12 @@ write_caddyfile() {
   local admin_user="$2"
   local plaintext_password="$3"
 
-  local hash hash_escaped domains_caddy
+  local hash domains_caddy
   hash="$(generate_bcrypt_hash "$plaintext_password")"
-  hash_escaped="$(escape_dollar_for_caddy "$hash")"
   domains_caddy="$(normalize_domains_for_caddy "$domains_csv")"
 
   umask 077
-  cat >"$CADDYFILE" <<EOF
+  cat >"$CADDYFILE" <<'EOF'
 (vpc_handlers) {
 
     @v2ws {
@@ -88,11 +83,13 @@ write_caddyfile() {
     reverse_proxy @v2ws v2ray:58888
 
     @panel {
-        path_regexp panel_route ^/panel(/.*)?\$\$|^/assets/
+        path_regexp panel_route ^/panel(/.*)?$|^/assets/
     }
     handle @panel {
-        basicauth {
-            ${admin_user} ${hash_escaped}
+        basic_auth {
+EOF
+  printf '            %s %s\n' "$admin_user" "$hash" >>"$CADDYFILE"
+  cat >>"$CADDYFILE" <<'EOF'
         }
         reverse_proxy panel:8000
     }

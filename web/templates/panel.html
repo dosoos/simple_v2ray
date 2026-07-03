@@ -828,6 +828,19 @@
     chartTrafficAmountInst = destroyChart(chartTrafficAmountInst);
     if (amountEl) amountEl.innerHTML = '';
 
+    var pairs = labels.map(function (label, i) {
+      return { label: label, value: series[i] };
+    });
+    pairs.sort(function (a, b) {
+      return b.value - a.value;
+    });
+    labels = pairs.map(function (p) {
+      return p.label;
+    });
+    series = pairs.map(function (p) {
+      return p.value;
+    });
+
     if (!labels.length || total <= 0) {
       if (amountEl) amountEl.classList.add('d-none');
       if (amountEmpty) amountEmpty.classList.remove('d-none');
@@ -856,11 +869,8 @@
             fontWeight: 600,
             colors: ['#566a7f'],
           },
-          formatter: function (val, opts) {
-            var pct = pctLabel(val);
-            var name = opts.w.globals.labels[opts.seriesIndex] || '';
-            if (name.length > 14) name = name.slice(0, 12) + '…';
-            return pct + (name ? '\n' + name : '');
+          formatter: function (val) {
+            return pctLabel(val);
           },
         },
         tooltip: {

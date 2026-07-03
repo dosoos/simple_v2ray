@@ -81,4 +81,4 @@ docker compose restart caddy
 
 本项目采用 [MIT](LICENSE) 协议开源。
 
-管理面板 UI 基于 [Sneat](https://github.com/themeselection/sneat-html-admin-template-free)（MIT），详见 `web/sneat-1.0.0/LICENSE.md`。
+管理面板 UI 基于 [Sneat](https://github.com/themeselection/sneat-html-admin-template-free)（MIT），静态资源位于 `web/static/`。

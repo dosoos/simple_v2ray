@@ -63,6 +63,7 @@ caddy/config/
 .DS_Store
 Thumbs.db
 Desktop.ini
+*:Zone.Identifier
 
 # —— 编辑器 / IDE ——
 .idea/

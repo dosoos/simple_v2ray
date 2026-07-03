@@ -73,8 +73,8 @@ def ensure_runtime_config_file() -> None:
         "可设置环境变量 V2RAY_DEFAULT_CONFIG_PATH。"
     )
 
-# Sneat 主题静态资源（与 `sneat-1.0.0/html` 中 `../assets/` 一致）
-ASSETS_DIR = Path(__file__).parent / "sneat-1.0.0" / "assets"
+# 面板静态资源（Bootstrap / Sneat 主题 CSS·JS·字体，挂载到 /assets）
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 @asynccontextmanager
@@ -90,8 +90,8 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="VPC Panel", docs_url=None, redoc_url=None, lifespan=lifespan)
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
-if ASSETS_DIR.is_dir():
-    app.mount("/assets", StarletteStaticFiles(directory=str(ASSETS_DIR)), name="assets")
+if STATIC_DIR.is_dir():
+    app.mount("/assets", StarletteStaticFiles(directory=str(STATIC_DIR)), name="assets")
 
 
 def _read_config_raw() -> str:

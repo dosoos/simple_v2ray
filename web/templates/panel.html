@@ -832,7 +832,7 @@
       return { label: label, value: series[i] };
     });
     pairs.sort(function (a, b) {
-      return b.value - a.value;
+      return a.value - b.value;
     });
     labels = pairs.map(function (p) {
       return p.label;
@@ -860,7 +860,7 @@
         labels: labels,
         series: series,
         colors: colors,
-        legend: { position: 'bottom', fontSize: '13px' },
+        legend: { position: 'bottom', fontSize: '13px', inverseOrder: true },
         dataLabels: {
           enabled: true,
           dropShadow: { enabled: false },

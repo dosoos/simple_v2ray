@@ -21,8 +21,10 @@ from traffic_store import get_store
 from share_links import build_share_payload
 from v2ray_stats import build_service_stats_payload, enrich_clients_traffic
 from v2ray_config import (
+    access_log_enabled,
     add_client,
     delete_client,
+    ensure_log_section,
     extract_import_clients,
     find_vmess_inbound,
     list_clients,
@@ -73,6 +75,25 @@ def ensure_runtime_config_file() -> None:
         "可设置环境变量 V2RAY_DEFAULT_CONFIG_PATH。"
     )
 
+
+def ensure_access_log_in_runtime_config() -> None:
+    """已有 config.json 若缺少 log.access，则按默认模板补齐。"""
+    if not CONFIG_PATH.is_file():
+        return
+    log = logging.getLogger("uvicorn.error")
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        log.warning("跳过 access log 补齐：%s 不是有效 JSON", CONFIG_PATH)
+        return
+    if not isinstance(data, dict):
+        return
+    if not ensure_log_section(data):
+        return
+    _atomic_write_json(CONFIG_PATH, data)
+    log.info("已为 %s 补齐 log.access，请重启 V2Ray 使 access log 生效", CONFIG_PATH)
+
+
 # 面板静态资源（Bootstrap / Sneat 主题 CSS·JS·字体，挂载到 /assets）
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -81,6 +102,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 async def lifespan(_app: FastAPI):
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     ensure_runtime_config_file()
+    ensure_access_log_in_runtime_config()
     get_store().load()
     start_traffic_poller_thread()
     logging.getLogger("uvicorn.error").info("流量采集线程已启动（按 TRAFFIC_POLL_INTERVAL_SEC 周期，reset 增量写入本月）")
@@ -184,6 +206,7 @@ def api_list_clients() -> JSONResponse:
             "traffic_error": traffic_error,
             "traffic_month": get_store().current_month_label(),
             "service_stats": build_service_stats_payload(),
+            "access_log_enabled": access_log_enabled(cfg),
         }
     )
 

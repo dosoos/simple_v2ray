@@ -576,6 +576,7 @@
   var chartTrafficShareInst = null;
   var chartTrafficAmountInst = null;
   var cachedServiceStats = null;
+  var accessLogEnabled = false;
   var exitStatsMode = 'outbound';
   const tbody = document.getElementById('tbody');
   const modalDetailEl = document.getElementById('modalDetail');
@@ -766,10 +767,10 @@
     if (!hintEl) return;
     if (mode === 'outbound') {
       hintEl.textContent = '按本月出站流量统计';
-    } else if (mode === 'domain') {
-      hintEl.textContent = '按本月连接次数统计（需在 V2Ray 配置中启用 access log）';
+    } else if (!accessLogEnabled) {
+      hintEl.textContent = '按本月连接次数统计';
     } else {
-      hintEl.textContent = '按本月连接次数统计（需在 V2Ray 配置中启用 access log）';
+      hintEl.textContent = '按本月连接次数统计';
     }
   }
 
@@ -948,6 +949,7 @@
       if (monthEl && j.traffic_month) monthEl.textContent = j.traffic_month;
 
       cachedServiceStats = j.service_stats || {};
+      accessLogEnabled = !!j.access_log_enabled;
 
       var banner = document.getElementById('trafficErrorBanner');
       if (banner) {

@@ -13,6 +13,35 @@ def load_config(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+_DEFAULT_LOG = {
+    "access": "/etc/v2ray/access.log",
+    "error": "/etc/v2ray/error.log",
+    "loglevel": "warning",
+}
+
+
+def ensure_log_section(config: dict[str, Any]) -> bool:
+    """补齐 log.access 等字段，返回是否有变更。"""
+    log_section = config.get("log")
+    if not isinstance(log_section, dict):
+        log_section = {}
+        config["log"] = log_section
+    changed = False
+    for key, val in _DEFAULT_LOG.items():
+        if not log_section.get(key):
+            log_section[key] = val
+            changed = True
+    return changed
+
+
+def access_log_enabled(config: dict[str, Any]) -> bool:
+    log_section = config.get("log")
+    if not isinstance(log_section, dict):
+        return False
+    access = log_section.get("access")
+    return bool(access and str(access).strip())
+
+
 def find_vmess_inbound(config: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     inbounds = config.get("inbounds")
     if not isinstance(inbounds, list):

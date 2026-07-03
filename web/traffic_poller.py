@@ -7,23 +7,47 @@ import os
 import threading
 import time
 
+from access_log_parser import default_access_log_path, parse_access_log_delta
 from traffic_store import get_store
-from v2ray_stats import query_user_traffic
+from v2ray_stats import query_stats
 
 log = logging.getLogger("vpc.traffic_poller")
 
 
+def _poll_access_log() -> None:
+    store = get_store()
+    path = default_access_log_path()
+    offset = store.get_access_log_offset()
+    domains, ips, new_offset = parse_access_log_delta(path, offset)
+    if new_offset != offset:
+        store.set_access_log_offset(new_offset)
+    if domains or ips:
+        store.add_access_delta(domains, ips)
+        log.debug(
+            "access log 增量: %d 域名项, %d IP 项",
+            len(domains),
+            len(ips),
+        )
+
+
 def _poll_once() -> None:
     store = get_store()
-    raw, err = query_user_traffic(reset=True)
+    users, outbounds, err = query_stats(reset=True)
     if err:
         store.set_last_poll_error(err)
         log.warning("Stats 查询失败: %s", err)
         return
     store.set_last_poll_error(None)
-    if raw:
-        store.add_delta(raw)
-        log.debug("已写入流量增量: %d 个用户计数器", len(raw))
+    if users:
+        store.add_user_delta(users)
+        log.debug("已写入用户流量增量: %d 个计数器", len(users))
+    if outbounds:
+        store.add_outbound_delta(outbounds)
+        log.debug("已写入出站流量增量: %d 个计数器", len(outbounds))
+    try:
+        _poll_access_log()
+    except Exception:
+        log.exception("access log 解析失败")
 
 
 def traffic_poll_loop() -> None:

@@ -19,7 +19,7 @@ from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 from traffic_poller import start_traffic_poller_thread
 from traffic_store import get_store
 from share_links import build_share_payload
-from v2ray_stats import enrich_clients_traffic
+from v2ray_stats import build_service_stats_payload, enrich_clients_traffic
 from v2ray_config import (
     add_client,
     delete_client,
@@ -183,6 +183,7 @@ def api_list_clients() -> JSONResponse:
             "vmess": _vmess_meta(cfg),
             "traffic_error": traffic_error,
             "traffic_month": get_store().current_month_label(),
+            "service_stats": build_service_stats_payload(),
         }
     )
 

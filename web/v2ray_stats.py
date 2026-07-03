@@ -11,6 +11,13 @@ from stats_command_pb2 import QueryStatsRequest
 from stats_command_pb2_grpc import StatsServiceStub
 from traffic_store import get_store
 
+_OUTBOUND_LABELS: dict[str, str] = {
+    "direct": "直连",
+    "block": "阻断",
+    "api": "API（内部）",
+    "proxy": "代理",
+}
+
 
 def format_bytes(n: int) -> str:
     """人类可读字节串（1024 进制）。"""
@@ -28,37 +35,61 @@ def format_bytes(n: int) -> str:
     return f"{s} {units[i]}"
 
 
-def parse_user_traffic(stats: list[Any]) -> dict[str, dict[str, int]]:
-    """将 QueryStats 返回的计数器解析为 email -> uplink/downlink（字节）。"""
-    out: dict[str, dict[str, int]] = {}
+def outbound_label(tag: str) -> str:
+    if tag in _OUTBOUND_LABELS:
+        return _OUTBOUND_LABELS[tag]
+    if tag.startswith("proxy-"):
+        return f"代理 ({tag[6:]})"
+    return tag
+
+
+def _parse_traffic_stats(stats: list[Any]) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
+    """解析 user / outbound 流量计数器。"""
+    users: dict[str, dict[str, int]] = {}
+    outbounds: dict[str, dict[str, int]] = {}
     for s in stats:
         name = getattr(s, "name", "") or ""
         val = int(getattr(s, "value", 0) or 0)
         parts = name.split(">>>")
         if len(parts) != 4:
             continue
-        scope, email, kind, direction = parts
-        if scope != "user" or kind != "traffic":
+        scope, key, kind, direction = parts
+        if kind != "traffic":
             continue
-        slot = out.setdefault(email, {"uplink": 0, "downlink": 0})
+        if scope == "user":
+            slot = users.setdefault(key, {"uplink": 0, "downlink": 0})
+        elif scope == "outbound":
+            slot = outbounds.setdefault(key, {"uplink": 0, "downlink": 0})
+        else:
+            continue
         if direction == "uplink":
             slot["uplink"] = val
         elif direction == "downlink":
             slot["downlink"] = val
-    return out
+    return users, outbounds
 
 
-def query_user_traffic(
+def parse_user_traffic(stats: list[Any]) -> dict[str, dict[str, int]]:
+    users, _ = _parse_traffic_stats(stats)
+    return users
+
+
+def parse_outbound_traffic(stats: list[Any]) -> dict[str, dict[str, int]]:
+    _, outbounds = _parse_traffic_stats(stats)
+    return outbounds
+
+
+def query_stats(
     host: str | None = None,
     port: int | None = None,
     timeout_sec: float = 8.0,
     *,
     reset: bool = False,
-) -> tuple[dict[str, dict[str, int]], str | None]:
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]], str | None]:
     """
-    调用 StatsService.QueryStats。
+    调用 StatsService.QueryStats，返回 (users, outbounds, error)。
 
-    reset=True：读取后立即清零 V2Ray 侧计数器（供定时增量采集）；面板展示不直连此处。
+    reset=True：读取后立即清零 V2Ray 侧计数器（供定时增量采集）。
     """
     h = host if host is not None else os.environ.get("V2RAY_API_HOST", "v2ray")
     p = int(port if port is not None else os.environ.get("V2RAY_API_PORT", "10085"))
@@ -68,14 +99,26 @@ def query_user_traffic(
         stub = StatsServiceStub(channel)
         req = QueryStatsRequest(pattern="", reset=reset)
         resp = stub.QueryStats(req, timeout=timeout_sec)
-        data = parse_user_traffic(list(resp.stat))
-        return data, None
+        users, outbounds = _parse_traffic_stats(list(resp.stat))
+        return users, outbounds, None
     except grpc.RpcError as e:
-        return {}, f"{e.code().name}: {e.details() or 'StatsService 调用失败'}"
+        return {}, {}, f"{e.code().name}: {e.details() or 'StatsService 调用失败'}"
     except OSError as e:
-        return {}, f"无法连接 Stats API ({addr}): {e}"
+        return {}, {}, f"无法连接 Stats API ({addr}): {e}"
     finally:
         channel.close()
+
+
+def query_user_traffic(
+    host: str | None = None,
+    port: int | None = None,
+    timeout_sec: float = 8.0,
+    *,
+    reset: bool = False,
+) -> tuple[dict[str, dict[str, int]], str | None]:
+    """兼容旧接口：仅返回用户流量。"""
+    users, _, err = query_stats(host, port, timeout_sec, reset=reset)
+    return users, err
 
 
 def enrich_clients_traffic(clients: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
@@ -93,3 +136,26 @@ def enrich_clients_traffic(clients: list[dict[str, Any]]) -> tuple[list[dict[str
         c["traffic_up"] = format_bytes(up)
         c["traffic_down"] = format_bytes(down)
     return clients, err
+
+
+def build_service_stats_payload() -> dict[str, Any]:
+    """组装服务管理页图表所需的出站 / 域名 / IP 统计。"""
+    store = get_store()
+    raw = store.get_service_stats()
+    outbounds = []
+    for item in raw.get("outbounds", []):
+        tag = str(item.get("tag", ""))
+        if tag == "api":
+            continue
+        outbounds.append(
+            {
+                "tag": tag,
+                "label": outbound_label(tag),
+                "bytes": int(item.get("bytes", 0)),
+            }
+        )
+    return {
+        "outbounds": outbounds,
+        "domains": raw.get("domains", []),
+        "ips": raw.get("ips", []),
+    }

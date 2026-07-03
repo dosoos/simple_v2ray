@@ -286,12 +286,18 @@
                 <div class="row g-3 mb-3">
                   <div class="col-lg-6">
                     <div class="card h-100">
-                      <div class="card-header py-3">
-                        <h5 class="mb-0">用户流量占比</h5>
+                      <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h5 class="mb-0">流量出口统计</h5>
+                        <div class="btn-group btn-group-sm flex-shrink-0" role="group" id="exitStatsTabs">
+                          <button type="button" class="btn btn-outline-primary active" data-exit-mode="outbound">出站类型</button>
+                          <button type="button" class="btn btn-outline-primary" data-exit-mode="domain">目标域名</button>
+                          <button type="button" class="btn btn-outline-primary" data-exit-mode="ip">目标 IP</button>
+                        </div>
                       </div>
                       <div class="card-body">
+                        <p class="text-muted small mb-2" id="exitStatsHint">按本月出站流量统计</p>
                         <div id="chartTrafficShare" class="panel-chart-wrap"></div>
-                        <p id="chartTrafficShareEmpty" class="text-muted text-center mb-0 d-none">暂无流量数据</p>
+                        <p id="chartTrafficShareEmpty" class="text-muted text-center mb-0 d-none">暂无统计数据</p>
                       </div>
                     </div>
                   </div>
@@ -569,6 +575,8 @@
   ];
   var chartTrafficShareInst = null;
   var chartTrafficAmountInst = null;
+  var cachedServiceStats = null;
+  var exitStatsMode = 'outbound';
   const tbody = document.getElementById('tbody');
   const modalDetailEl = document.getElementById('modalDetail');
   const modalEditEl = document.getElementById('modalEdit');
@@ -609,6 +617,20 @@
       } finally {
         btnRestartV2ray.disabled = false;
       }
+    });
+  }
+
+  var exitStatsTabs = document.getElementById('exitStatsTabs');
+  if (exitStatsTabs) {
+    exitStatsTabs.querySelectorAll('[data-exit-mode]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var mode = btn.getAttribute('data-exit-mode') || 'outbound';
+        exitStatsMode = mode;
+        exitStatsTabs.querySelectorAll('[data-exit-mode]').forEach(function (b) {
+          b.classList.toggle('active', b === btn);
+        });
+        renderExitStatsChart(exitStatsMode, cachedServiceStats || {});
+      });
     });
   }
 
@@ -662,33 +684,118 @@
     return out;
   }
 
-  function renderServiceCharts(labels, series, total) {
+  function pctLabel(val) {
+    return (Math.round(val * 10) / 10) + '%';
+  }
+
+  function pieCalloutDataLabels(total, unit) {
+    return {
+      enabled: true,
+      dropShadow: { enabled: false },
+      style: {
+        fontSize: '12px',
+        fontWeight: 600,
+        colors: ['#566a7f'],
+      },
+      formatter: function (val, opts) {
+        var pct = pctLabel(val);
+        if (unit === 'bytes') {
+          var raw = opts.w.globals.series[opts.seriesIndex];
+          return pct + '\n' + formatBytesClient(raw);
+        }
+        return pct;
+      },
+    };
+  }
+
+  function pieCalloutPlotOptions(donutSize) {
+    var pieOpts = {
+      dataLabels: { offset: 28 },
+      expandOnClick: false,
+    };
+    if (donutSize) {
+      pieOpts.donut = { size: donutSize };
+    }
+    return { pie: pieOpts };
+  }
+
+  function buildExitStatsSeries(mode, stats) {
+    var labels = [];
+    var series = [];
+    var total = 0;
+    var unit = 'bytes';
+    var items = [];
+    if (mode === 'outbound') {
+      items = (stats && stats.outbounds) || [];
+      items.forEach(function (item) {
+        var v = Number(item.bytes) || 0;
+        if (v > 0) {
+          labels.push(item.label || item.tag || '—');
+          series.push(v);
+          total += v;
+        }
+      });
+    } else if (mode === 'domain') {
+      unit = 'count';
+      items = (stats && stats.domains) || [];
+      items.forEach(function (item) {
+        var v = Number(item.count) || 0;
+        if (v > 0) {
+          labels.push(item.label || '—');
+          series.push(v);
+          total += v;
+        }
+      });
+    } else {
+      unit = 'count';
+      items = (stats && stats.ips) || [];
+      items.forEach(function (item) {
+        var v = Number(item.count) || 0;
+        if (v > 0) {
+          labels.push(item.label || '—');
+          series.push(v);
+          total += v;
+        }
+      });
+    }
+    return { labels: labels, series: series, total: total, unit: unit };
+  }
+
+  function updateExitStatsHint(mode) {
+    var hintEl = document.getElementById('exitStatsHint');
+    if (!hintEl) return;
+    if (mode === 'outbound') {
+      hintEl.textContent = '按本月出站流量统计';
+    } else if (mode === 'domain') {
+      hintEl.textContent = '按本月连接次数统计（需在 V2Ray 配置中启用 access log）';
+    } else {
+      hintEl.textContent = '按本月连接次数统计（需在 V2Ray 配置中启用 access log）';
+    }
+  }
+
+  function renderExitStatsChart(mode, stats) {
     var shareEl = document.getElementById('chartTrafficShare');
-    var amountEl = document.getElementById('chartTrafficAmount');
     var shareEmpty = document.getElementById('chartTrafficShareEmpty');
-    var amountEmpty = document.getElementById('chartTrafficAmountEmpty');
     chartTrafficShareInst = destroyChart(chartTrafficShareInst);
-    chartTrafficAmountInst = destroyChart(chartTrafficAmountInst);
     if (shareEl) shareEl.innerHTML = '';
-    if (amountEl) amountEl.innerHTML = '';
+    updateExitStatsHint(mode);
+
+    var built = buildExitStatsSeries(mode, stats || {});
+    var labels = built.labels;
+    var series = built.series;
+    var total = built.total;
+    var unit = built.unit;
 
     if (!labels.length || total <= 0) {
       if (shareEl) shareEl.classList.add('d-none');
-      if (amountEl) amountEl.classList.add('d-none');
       if (shareEmpty) shareEmpty.classList.remove('d-none');
-      if (amountEmpty) amountEmpty.classList.remove('d-none');
       return;
     }
 
     if (shareEl) shareEl.classList.remove('d-none');
-    if (amountEl) amountEl.classList.remove('d-none');
     if (shareEmpty) shareEmpty.classList.add('d-none');
-    if (amountEmpty) amountEmpty.classList.add('d-none');
 
     var colors = chartColors(labels.length);
-    var headingColor =
-      (typeof config !== 'undefined' && config.colors && config.colors.headingColor) || '#566a7f';
-
     if (shareEl && typeof ApexCharts !== 'undefined') {
       chartTrafficShareInst = new ApexCharts(shareEl, {
         chart: { type: 'pie', height: 320, fontFamily: 'Public Sans' },
@@ -696,24 +803,43 @@
         series: series,
         colors: colors,
         legend: { position: 'bottom', fontSize: '13px' },
-        dataLabels: {
-          enabled: true,
-          formatter: function (val) {
-            return (Math.round(val * 10) / 10) + '%';
-          },
-        },
+        dataLabels: pieCalloutDataLabels(total, unit),
+        plotOptions: pieCalloutPlotOptions(null),
         tooltip: {
           y: {
             formatter: function (val) {
               var pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
-              return formatBytesClient(val) + ' (' + pct + '%)';
+              if (unit === 'bytes') {
+                return formatBytesClient(val) + ' (' + pct + '%)';
+              }
+              return val + ' 次 (' + pct + '%)';
             },
           },
         },
-        stroke: { width: 2 },
+        stroke: { width: 2, colors: ['#fff'] },
       });
       chartTrafficShareInst.render();
     }
+  }
+
+  function renderUserTrafficChart(labels, series, total) {
+    var amountEl = document.getElementById('chartTrafficAmount');
+    var amountEmpty = document.getElementById('chartTrafficAmountEmpty');
+    chartTrafficAmountInst = destroyChart(chartTrafficAmountInst);
+    if (amountEl) amountEl.innerHTML = '';
+
+    if (!labels.length || total <= 0) {
+      if (amountEl) amountEl.classList.add('d-none');
+      if (amountEmpty) amountEmpty.classList.remove('d-none');
+      return;
+    }
+
+    if (amountEl) amountEl.classList.remove('d-none');
+    if (amountEmpty) amountEmpty.classList.add('d-none');
+
+    var colors = chartColors(labels.length);
+    var headingColor =
+      (typeof config !== 'undefined' && config.colors && config.colors.headingColor) || '#566a7f';
 
     if (amountEl && typeof ApexCharts !== 'undefined') {
       chartTrafficAmountInst = new ApexCharts(amountEl, {
@@ -724,21 +850,33 @@
         legend: { position: 'bottom', fontSize: '13px' },
         dataLabels: {
           enabled: true,
-          formatter: function (_val, opts) {
-            return formatBytesClient(series[opts.seriesIndex]);
+          dropShadow: { enabled: false },
+          style: {
+            fontSize: '12px',
+            fontWeight: 600,
+            colors: ['#566a7f'],
+          },
+          formatter: function (val, opts) {
+            var pct = pctLabel(val);
+            var name = opts.w.globals.labels[opts.seriesIndex] || '';
+            if (name.length > 14) name = name.slice(0, 12) + '…';
+            return pct + (name ? '\n' + name : '');
           },
         },
         tooltip: {
           y: {
             formatter: function (val) {
-              return formatBytesClient(val);
+              var pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+              return formatBytesClient(val) + ' (' + pct + '%)';
             },
           },
         },
         plotOptions: {
           pie: {
+            dataLabels: { offset: 32 },
+            expandOnClick: false,
             donut: {
-              size: '62%',
+              size: '58%',
               labels: {
                 show: true,
                 total: {
@@ -753,10 +891,15 @@
             },
           },
         },
-        stroke: { width: 2 },
+        stroke: { width: 2, colors: ['#fff'] },
       });
       chartTrafficAmountInst.render();
     }
+  }
+
+  function renderServiceCharts(labels, series, total, serviceStats) {
+    renderExitStatsChart(exitStatsMode, serviceStats || cachedServiceStats || {});
+    renderUserTrafficChart(labels, series, total);
   }
 
   async function loadServiceDashboard() {
@@ -794,6 +937,8 @@
       if (totalDownEl) totalDownEl.textContent = formatBytesClient(totalDown);
       if (monthEl && j.traffic_month) monthEl.textContent = j.traffic_month;
 
+      cachedServiceStats = j.service_stats || {};
+
       var banner = document.getElementById('trafficErrorBanner');
       if (banner) {
         if (j.traffic_error) {
@@ -804,7 +949,7 @@
         }
       }
 
-      renderServiceCharts(labels, series, total);
+      renderServiceCharts(labels, series, total, cachedServiceStats);
     } catch (e) {
       flash(String(e.message || e), false);
     }
